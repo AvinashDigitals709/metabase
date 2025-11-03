@@ -1,0 +1,27 @@
+version: 0.2
+
+env:
+  variables:
+    ARTIFACT_BUCKET: "metabase-artifacts-avinash"
+    ARTIFACT_PREFIX: "metabase"
+    AWS_REGION: "us-east-1"
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+    commands:
+      - echo "Installing dependencies..."
+  build:
+    commands:
+      - echo "Building Metabase JAR..."
+      - ./gradlew shadowJar || ./bin/build || true
+      - JAR_PATH=$(find . -type f -name "metabase*.jar" | head -n1)
+      - echo "JAR found: $JAR_PATH"
+  post_build:
+    commands:
+      - echo "Uploading artifact to S3..."
+      - aws s3 cp "$JAR_PATH" "s3://$ARTIFACT_BUCKET/$ARTIFACT_PREFIX/metabase-$(date +%Y%m%d%H%M%S).jar" --region $AWS_REGION
+artifacts:
+  files:
+    - deployment/**/*
