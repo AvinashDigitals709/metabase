@@ -1,68 +1,44 @@
 version: 0.2
 
+env:
+  variables:
+    AWS_DEFAULT_REGION: "ap-south-1"
+    BUILD_DIR: "target"
+
 phases:
   install:
     runtime-versions:
-      java: corretto21
+      java: corretto17
       nodejs: 22
     commands:
-      - echo "[INFO] Installing dependencies..."
-      - apt-get update -y
-      - apt-get install -y zip git curl rlwrap wget
-      - git init || true
-      - git config --global user.email "build@example.com" || true
-      - git config --global user.name "Build System" || true
-      - chmod +x ./bin/build || true
-      - chmod +x ./bin/mage || true
-
-      # === Install Go (required for mage) ===
-      - echo "[INFO] Installing Go..."
-      - wget https://golang.org/dl/go1.22.3.linux-amd64.tar.gz
-      - rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
-      - export PATH=$PATH:/usr/local/go/bin
-      - go version
-
-      # === Install Clojure ===
-      - echo "[INFO] Installing Clojure..."
-      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
-      - chmod +x linux-install-1.11.1.1413.sh
-      - ./linux-install-1.11.1.1413.sh
-      - export PATH=$PATH:/usr/local/bin
-      - clojure -Sdescribe || echo "Clojure installed successfully"
-
-      # === Install JS deps ===
-      - yarn install --network-timeout 1000000
+      - echo "Installing required tools..."
+      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1182.sh
+      - chmod +x linux-install-1.11.1.1182.sh
+      - ./linux-install-1.11.1.1182.sh
+      - npm install -g yarn
+      - echo "Environment setup complete: Java 17, Node 22, Clojure, Yarn."
 
   pre_build:
     commands:
-      - echo "[INFO] Building frontend..."
-      - yarn build:cljs
-      - yarn build:js
+      - echo "Installing frontend dependencies..."
+      - yarn install --frozen-lockfile
+      - echo "Building frontend..."
+      - yarn run build
+      - echo "Frontend build complete."
 
   build:
     commands:
-      - echo "[INFO] Building Metabase backend JAR..."
-      # Instead of "yarn mage", directly call the mage script
-      - ./bin/mage build:jar || ./bin/build || echo "Trying alternative build"
-      - ls -la target/uberjar/ || echo "JAR directory not found"
-      - mkdir -p build_output
-      - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
+      - echo "Building Metabase backend (JAR)..."
+      - lein uberjar
+      - echo "Verifying build output..."
+      - ls -lh $BUILD_DIR
 
   post_build:
     commands:
-      - echo "[INFO] Packaging Metabase for deployment..."
-      - |
-        if [ ! -f build_output/metabase.jar ]; then
-          echo "ERROR: metabase.jar not found! Build failed."
-          exit 1
-        fi
-      - cd build_output
-      - zip -r ../metabase-deploy.zip .
-      - cd ..
-      - echo "[INFO] Packaging completed successfully"
-      - ls -lh metabase-deploy.zip || echo "Zip file not created"
+      - echo "Metabase build completed successfully. Ready for CodeDeploy."
+      - echo "Artifact path: $BUILD_DIR/metabase.jar"
 
 artifacts:
   files:
-    - metabase-deploy.zip
-  base-directory: .
+    - target/metabase.jar
+  discard-paths: yes
