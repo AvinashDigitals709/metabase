@@ -8,27 +8,31 @@ phases:
     commands:
       - echo "[INFO] Installing dependencies..."
       - apt-get update -y
-      - apt-get install -y zip git curl
+      - apt-get install -y zip git curl rlwrap
       - git init || true
       - git config --global user.email "build@example.com" || true
       - git config --global user.name "Build System" || true
-      - chmod +x ./bin/build
-      - chmod +x ./bin/mage
+      - chmod +x ./bin/build || true
+      - chmod +x ./bin/mage || true
       - yarn install --network-timeout 1000000
-      # === ADD THIS TO INSTALL CLOJURE ===
+
+      # === Install Clojure and add to PATH ===
+      - echo "[INFO] Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
-      
+      - export PATH=$PATH:/usr/local/bin
+      - clojure -Sdescribe || echo "Clojure installed successfully"
+
   pre_build:
     commands:
-      - echo "[INFO] Preparing build environment..."
+      - echo "[INFO] Building frontend..."
       - yarn build:cljs
       - yarn build:js
 
   build:
     commands:
-      - echo "[INFO] Building Metabase JAR..."
+      - echo "[INFO] Building Metabase backend JAR..."
       - yarn mage build jar
       - ls -la target/uberjar/ || echo "JAR directory not found"
       - mkdir -p build_output
@@ -45,7 +49,7 @@ phases:
       - cd build_output
       - zip -r ../metabase-deploy.zip .
       - cd ..
-      - echo "Packaging completed successfully"
+      - echo "[INFO] Packaging completed successfully"
       - ls -lh metabase-deploy.zip || echo "Zip file not created"
 
 artifacts:
