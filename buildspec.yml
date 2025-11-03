@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "[INFO] Installing dependencies..."
+      - apt-get update -y
+      - apt-get install -y zip
+  pre_build:
+    commands:
+      - echo "[INFO] Preparing build environment..."
+      - mkdir -p build_output
+  build:
+    commands:
+      - echo "[INFO] Copying metabase.jar and scripts..."
+      - cp metabase.jar build_output/
+      - cp appspec.yml build_output/
+      - cp -r scripts build_output/
+      - cd build_output
+      - echo "[INFO] Creating deployment archive..."
+      - zip -r metabase-deploy.zip .
+  post_build:
+    commands:
+      - echo "[INFO] Build complete. Uploading artifact to S3..."
+artifacts:
+  files:
+    - build_output/metabase-deploy.zip
+  discard-paths: yes
