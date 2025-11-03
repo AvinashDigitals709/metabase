@@ -9,29 +9,23 @@ phases:
       - echo "[INFO] Installing dependencies..."
       - apt-get update -y
       - apt-get install -y zip git
-      # Initialize git repository to fix husky warning
       - git init || true
       - git config --global user.email "build@example.com" || true
       - git config --global user.name "Build System" || true
-      # Set execute permissions for build scripts
-      - chmod +x ./bin/build
-      - chmod +x ./bin/mage
-      # Install dependencies
+      - chmod +x ./bin/build || true
+      - chmod +x ./bin/mage || true
       - yarn install --network-timeout 1000000
 
   pre_build:
     commands:
       - echo "[INFO] Preparing build environment..."
-      # Build CLJS and JS separately as per package.json scripts
       - yarn build:cljs
       - yarn build:js
 
   build:
     commands:
       - echo "[INFO] Building Metabase JAR..."
-      # Use mage to build the JAR (alternative to ./bin/build)
       - yarn mage build jar
-      # Verify the JAR was created
       - ls -la target/uberjar/ || echo "JAR directory not found"
       - mkdir -p build_output
       - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
@@ -39,7 +33,6 @@ phases:
   post_build:
     commands:
       - echo "[INFO] Packaging Metabase for deployment..."
-      # Check if build was successful before packaging
       - if [ -f build_output/metabase.jar ]; then
           echo "JAR found, packaging...";
           cd build_output;
