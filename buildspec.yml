@@ -12,8 +12,8 @@ phases:
       - git init || true
       - git config --global user.email "build@example.com" || true
       - git config --global user.name "Build System" || true
-      - chmod +x ./bin/build || true
-      - chmod +x ./bin/mage || true
+      - chmod +x ./bin/build
+      - chmod +x ./bin/mage
       - yarn install --network-timeout 1000000
 
   pre_build:
@@ -33,16 +33,15 @@ phases:
   post_build:
     commands:
       - echo "[INFO] Packaging Metabase for deployment..."
-      - if [ -f build_output/metabase.jar ]; then
-          echo "JAR found, packaging...";
-          cd build_output;
-          zip -r ../metabase-deploy.zip .;
-          cd ..;
-          echo "Packaging completed successfully";
-        else
-          echo "ERROR: metabase.jar not found! Build failed.";
-          exit 1;
+      - |
+        if [ ! -f build_output/metabase.jar ]; then
+          echo "ERROR: metabase.jar not found! Build failed."
+          exit 1
         fi
+      - cd build_output
+      - zip -r ../metabase-deploy.zip .
+      - cd ..
+      - echo "Packaging completed successfully"
       - ls -lh metabase-deploy.zip || echo "Zip file not created"
 
 artifacts:
