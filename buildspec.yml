@@ -2,8 +2,8 @@ version: 0.2
 
 env:
   variables:
-    AWS_DEFAULT_REGION: "us-east-1"
-    BUILD_DIR: "target"
+    AWS_DEFAULT_REGION: us-east-1
+    BUILD_DIR: target
 
 phases:
   install:
@@ -16,7 +16,7 @@ phases:
       - chmod +x linux-install-1.11.1.1182.sh
       - ./linux-install-1.11.1.1182.sh
       - npm install -g yarn
-      - echo "Environment setup complete: Java 17, Node 22, Clojure, Yarn."
+      - echo "Environment setup complete."
 
   pre_build:
     commands:
@@ -31,12 +31,12 @@ phases:
       - echo "Building Metabase backend (JAR)..."
       - lein uberjar
       - echo "Verifying build output..."
-      - ls -lh $BUILD_DIR
+      - ls -lh target
 
   post_build:
     commands:
       - echo "Metabase build completed successfully."
-      - echo "Artifact path: $BUILD_DIR/metabase.jar"
+      - echo "Artifact path: target/metabase.jar"
 
 artifacts:
   files:
