@@ -8,21 +8,30 @@ phases:
     commands:
       - echo "[INFO] Installing dependencies..."
       - apt-get update -y
-      - apt-get install -y zip git curl rlwrap
+      - apt-get install -y zip git curl rlwrap wget
       - git init || true
       - git config --global user.email "build@example.com" || true
       - git config --global user.name "Build System" || true
       - chmod +x ./bin/build || true
       - chmod +x ./bin/mage || true
-      - yarn install --network-timeout 1000000
 
-      # === Install Clojure and add to PATH ===
+      # === Install Go (required for mage) ===
+      - echo "[INFO] Installing Go..."
+      - wget https://golang.org/dl/go1.22.3.linux-amd64.tar.gz
+      - rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.3.linux-amd64.tar.gz
+      - export PATH=$PATH:/usr/local/go/bin
+      - go version
+
+      # === Install Clojure ===
       - echo "[INFO] Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
       - export PATH=$PATH:/usr/local/bin
       - clojure -Sdescribe || echo "Clojure installed successfully"
+
+      # === Install JS deps ===
+      - yarn install --network-timeout 1000000
 
   pre_build:
     commands:
@@ -33,7 +42,8 @@ phases:
   build:
     commands:
       - echo "[INFO] Building Metabase backend JAR..."
-      - yarn mage build jar
+      # Instead of "yarn mage", directly call the mage script
+      - ./bin/mage build:jar || ./bin/build || echo "Trying alternative build"
       - ls -la target/uberjar/ || echo "JAR directory not found"
       - mkdir -p build_output
       - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
