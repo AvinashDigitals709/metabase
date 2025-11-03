@@ -3,40 +3,29 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto17
+      java: corretto21
+      nodejs: 22
     commands:
-      - echo "[INFO] === Installing dependencies ==="
+      - echo "[INFO] Installing dependencies..."
       - apt-get update -y
-      - apt-get install -y clojure rlwrap wget unzip zip
-      - echo "[INFO] Installing Leiningen (Clojure build tool)"
-      - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
-      - chmod +x lein && mv lein /usr/local/bin/
-      - lein -v
-      - java -version
-      - clojure -Sdescribe || echo "Clojure verified"
-
-  pre_build:
-    commands:
-      - echo "[INFO] === Preparing environment ==="
-      - chmod +x bin/build-drivers.sh
+      - apt-get install -y zip
+      - yarn install
 
   build:
     commands:
-      - echo "[INFO] === Building Metabase backend ==="
-      - ./bin/build-drivers.sh
-      - echo "[INFO] === Checking build output ==="
-      - ls -lh target/uberjar || echo "No JAR found"
+      - echo "[INFO] Building Metabase JAR..."
+      - ./bin/build
       - mkdir -p build_output
-      - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
-      - cd build_output && zip -r metabase-deploy.zip metabase.jar
-      - echo "[INFO] === Packaging complete ==="
+      - cp target/uberjar/metabase.jar build_output/
 
   post_build:
     commands:
-      - echo "[INFO] === Build finished successfully ==="
-      - ls -lh build_output/
+      - echo "[INFO] Packaging Metabase for deployment..."
+      - cd build_output
+      - zip -r ../metabase-deploy.zip .
+      - cd ..
+      - ls -lh build_output || echo "Build output directory missing!"
 
 artifacts:
   files:
-    - build_output/metabase-deploy.zip
-  discard-paths: yes
+    - metabase-deploy.zip
