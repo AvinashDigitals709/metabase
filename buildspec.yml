@@ -2,38 +2,38 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      java: corretto17
+      nodejs: 18
     commands:
-      - echo "[INFO] === Installing dependencies ==="
+      - echo "[INFO] Installing dependencies..."
       - apt-get update -y
-      - apt-get install -y openjdk-17-jdk nodejs npm zip wget git curl
+      - apt-get install -y zip clojure
       - npm install -g yarn
-      - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein -O /usr/local/bin/lein
-      - chmod +x /usr/local/bin/lein
-      - lein --version
-      - node -v && yarn -v && java -version
   pre_build:
     commands:
-      - echo "[INFO] === Installing Node.js project dependencies ==="
-      - yarn install --frozen-lockfile
-      - echo "[INFO] === Preparing build directories ==="
+      - echo "[INFO] Preparing frontend and backend..."
       - mkdir -p build_output
   build:
     commands:
-      - echo "[INFO] === Building frontend ==="
+      - echo "[INFO] Building frontend..."
+      - yarn install
       - yarn build
-      - echo "[INFO] === Building backend JAR ==="
-      - lein clean
-      - lein uberjar
-      - echo "[INFO] === Copying build artifacts ==="
-      - cp target/uberjar/metabase.jar build_output/
-      - cp deployment/appspec.yml build_output/
-      - cp -r deployment/scripts build_output/
+
+      - echo "[INFO] Building backend..."
+      - ./bin/build-drivers.sh
+      - clojure -M:run
+
+      - echo "[INFO] Packaging build artifact..."
+      - cp -r target build_output/ || true
+      - cp -r resources build_output/ || true
+      - cp appspec.yml build_output/
+      - cp -r scripts build_output/
       - cd build_output
-      - echo "[INFO] === Creating deployment package ==="
       - zip -r metabase-deploy.zip .
   post_build:
     commands:
-      - echo "[INFO] === Build completed successfully! ==="
+      - echo "[INFO] Build complete. Artifact ready for upload."
 artifacts:
   files:
     - build_output/metabase-deploy.zip
