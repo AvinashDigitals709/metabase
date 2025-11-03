@@ -3,37 +3,44 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto17
       nodejs: 22
     commands:
-      - echo "[INFO] Installing dependencies..."
+      - echo "[INFO] === Installing system dependencies ==="
       - apt-get update -y
-      - apt-get install -y zip clojure
+      - apt-get install -y openjdk-17-jdk clojure rlwrap zip
+      - echo "[INFO] === Installing Yarn and shadow-cljs ==="
       - npm install -g yarn
+      - yarn global add shadow-cljs
+      - java -version
+      - node -v
+      - yarn -v
+      - clojure -Sdescribe | grep version || echo "Clojure installed"
+
   pre_build:
     commands:
-      - echo "[INFO] Preparing frontend and backend..."
+      - echo "[INFO] === Preparing build directories ==="
       - mkdir -p build_output
+
   build:
     commands:
-      - echo "[INFO] Building frontend..."
+      - echo "[INFO] === Installing frontend dependencies ==="
       - yarn install
+      - echo "[INFO] === Building frontend using shadow-cljs ==="
       - yarn build
-
-      - echo "[INFO] Building backend..."
+      # Optional: frontend-only build
+      # - yarn shadow-cljs release app
+      - echo "[INFO] === Building backend ==="
       - ./bin/build-drivers.sh
-      - clojure -M:run || true   # optional to avoid pipeline stop if app auto-starts
+      - echo "[INFO] === Running backend in test mode ==="
+      - clojure -M:run || echo "[WARN] Backend run skipped (for build only)"
+      - echo "[INFO] === Packaging artifact ==="
+      - zip -r build_output/metabase-deploy.zip metabase.jar appspec.yml scripts/
 
-      - echo "[INFO] Packaging build artifact..."
-      - cp -r target build_output/ || true
-      - cp -r resources build_output/ || true
-      - cp appspec.yml build_output/
-      - cp -r scripts build_output/
-      - cd build_output
-      - zip -r metabase-deploy.zip .
   post_build:
     commands:
-      - echo "[INFO] Build complete. Artifact ready for upload."
+      - echo "[INFO] === Build complete. Verifying output ==="
+      - ls -lh build_output
+
 artifacts:
   files:
     - build_output/metabase-deploy.zip
