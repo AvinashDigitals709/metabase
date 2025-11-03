@@ -11,7 +11,9 @@ phases:
       java: corretto17
       nodejs: 22
     commands:
-      - echo "Installing required tools..."
+      - echo "Installing system and build dependencies..."
+      - apt-get update -y
+      - apt-get install -y git curl
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1182.sh
       - chmod +x linux-install-1.11.1.1182.sh
       - ./linux-install-1.11.1.1182.sh
@@ -21,14 +23,17 @@ phases:
   pre_build:
     commands:
       - echo "Installing frontend dependencies..."
-      - yarn install --frozen-lockfile
-      - echo "Building frontend..."
-      - yarn run build
-      - echo "Frontend build complete."
+      - yarn install
+      - echo "Frontend dependencies installed."
 
   build:
     commands:
-      - echo "Building Metabase backend (JAR)..."
+      - echo "Building frontend for production..."
+      - yarn build
+      - echo "Frontend build complete."
+      - echo "Building Metabase drivers..."
+      - ./bin/build-drivers.sh
+      - echo "Starting Metabase backend build (JAR)..."
       - lein uberjar
       - echo "Verifying build output..."
       - ls -lh target
