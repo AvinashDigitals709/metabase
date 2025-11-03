@@ -3,23 +3,38 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 22
+      java: corretto17
     commands:
-      - echo "[INFO] Installing system dependencies..."
+      - echo "[INFO] === Installing dependencies ==="
       - apt-get update -y
-      - apt-get install -y openjdk-17-jdk clojure zip
+      - apt-get install -y clojure rlwrap wget unzip zip
+      - echo "[INFO] Installing Leiningen (Clojure build tool)"
+      - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+      - chmod +x lein && mv lein /usr/local/bin/
+      - lein -v
       - java -version
-      - clojure -Sdescribe | grep version || echo "Clojure installed"
+      - clojure -Sdescribe || echo "Clojure verified"
+
+  pre_build:
+    commands:
+      - echo "[INFO] === Preparing environment ==="
+      - chmod +x bin/build-drivers.sh
 
   build:
     commands:
-      - echo "[INFO] Building backend JAR..."
+      - echo "[INFO] === Building Metabase backend ==="
       - ./bin/build-drivers.sh
-      - echo "[INFO] Creating deployment package..."
+      - echo "[INFO] === Checking build output ==="
+      - ls -lh target/uberjar || echo "No JAR found"
       - mkdir -p build_output
-      - cp metabase.jar appspec.yml -t build_output/
-      - cp -r scripts build_output/
-      - cd build_output && zip -r metabase-deploy.zip .
+      - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
+      - cd build_output && zip -r metabase-deploy.zip metabase.jar
+      - echo "[INFO] === Packaging complete ==="
+
+  post_build:
+    commands:
+      - echo "[INFO] === Build finished successfully ==="
+      - ls -lh build_output/
 
 artifacts:
   files:
