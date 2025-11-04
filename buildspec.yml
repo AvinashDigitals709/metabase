@@ -1,58 +1,65 @@
 version: 0.2
 
+# Define environment variables
+env:
+  variables:
+    # The final name of the JAR file to be deployed
+    MB_ARTIFACT_NAME: metabase.jar
+
 phases:
   install:
-    runtime-versions:
-      java: corretto21
-      nodejs: 22
     commands:
-      - echo "[INFO] Installing dependencies..."
-      - apt-get update -y
-      - apt-get install -y zip git curl rlwrap
-      - git init || true
-      - git config --global user.email "build@example.com" || true
-      - git config --global user.name "Build System" || true
-      - chmod +x ./bin/build || true
-      - chmod +x ./bin/mage || true
-      - yarn install --network-timeout 1000000
+      # 1. Update system packages and install necessary runtimes/tools
+      # Assuming a standard Linux environment (e.g., Ubuntu or Amazon Linux 2 with appropriate base image)
+      # You must ensure your CodeBuild image supports both a recent JDK (e.g., 11 or 17) and Node (e.g., 18+)
+      - echo "Installing dependencies..."
+      # Install Yarn globally for frontend dependencies
+      - npm install -g yarn
 
-      # === Install Clojure and add to PATH ===
-      - echo "[INFO] Installing Clojure..."
-      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
-      - chmod +x linux-install-1.11.1.1413.sh
-      - ./linux-install-1.11.1.1413.sh
-      - export PATH=$PATH:/usr/local/bin
-      - clojure -Sdescribe || echo "Clojure installed successfully"
+      # Note: Clojure/Java runtime and Node are usually pre-installed on modern CodeBuild images.
+      # If your image requires manual installation, uncomment the appropriate steps:
+      # - sudo apt-get update -y
+      # - sudo apt-get install -y openjdk-11-jdk # For Clojure/Java
+      # - sudo apt-get install -y nodejs npm
+
+      # 2. Install JavaScript/Frontend project dependencies
+      - echo "Installing Yarn dependencies..."
+      # Using --frozen-lockfile for deterministic builds
+      - yarn install --frozen-lockfile
 
   pre_build:
     commands:
-      - echo "[INFO] Building frontend..."
-      - yarn build:cljs
-      - yarn build:js
+      # 3. Build Database Drivers (Crucial Metabase step)
+      - echo "Building Metabase database drivers..."
+      - ./bin/build-drivers.sh
+
+      # 4. Optional: Run tests if you have them configured (highly recommended)
+      # - echo "Running tests..."
+      # - yarn test
+      # - clojure -M:test
 
   build:
     commands:
-      - echo "[INFO] Building Metabase backend JAR..."
-      - yarn mage build jar
-      - ls -la target/uberjar/ || echo "JAR directory not found"
-      - mkdir -p build_output
-      - cp target/uberjar/metabase.jar build_output/ || echo "JAR copy failed"
+      # 5. Build Frontend assets
+      - echo "Building frontend assets..."
+      # This command compiles the React/JS code into static files
+      - yarn build
 
-  post_build:
-    commands:
-      - echo "[INFO] Packaging Metabase for deployment..."
-      - |
-        if [ ! -f build_output/metabase.jar ]; then
-          echo "ERROR: metabase.jar not found! Build failed."
-          exit 1
-        fi
-      - cd build_output
-      - zip -r ../metabase-deploy.zip .
-      - cd ..
-      - echo "[INFO] Packaging completed successfully"
-      - ls -lh metabase-deploy.zip || echo "Zip file not created"
+      # 6. Build the Uberjar
+      - echo "Packaging the final Metabase uberjar (backend + frontend assets + drivers)..."
+      # This Metabase script creates the self-contained JAR file
+      - ./bin/build-uberjar.sh
+
+      # 7. Move and rename the artifact to the root of the build output
+      # The final JAR is typically placed in the 'target/' directory
+      - TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+      - if [ -z "$TARGET_JAR" ]; then echo "Error: Metabase JAR not found!"; exit 1; fi
+      - mv $TARGET_JAR $MB_ARTIFACT_NAME
+      - echo "Successfully created $MB_ARTIFACT_NAME"
 
 artifacts:
   files:
-    - metabase-deploy.zip
-  base-directory: .
+    - $MB_ARTIFACT_NAME
+    - appspec.yml 
+    - deploy_scripts/*
+  discard-paths: no 
