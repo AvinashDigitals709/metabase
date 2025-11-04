@@ -1,6 +1,5 @@
 version: 0.2
 
-# Define environment variables
 env:
   variables:
     MB_ARTIFACT_NAME: metabase.jar
@@ -9,6 +8,9 @@ phases:
   install:
     commands:
       - echo "Starting Install Phase"
+      # Install Node.js 22
+      - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      - apt-get install -y nodejs
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
       - yarn install --frozen-lockfile
