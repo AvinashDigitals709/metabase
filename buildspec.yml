@@ -14,14 +14,12 @@ phases:
       - apt-get install -y openjdk-21-jdk curl wget
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
-      - java -version
       
       # Install Clojure
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
       - export PATH=$PATH:/usr/local/bin
-      - /usr/local/bin/clojure --version
       
   build:
     commands:
@@ -29,45 +27,49 @@ phases:
       - export PATH=$JAVA_HOME/bin:$PATH
       - export PATH=$PATH:/usr/local/bin
       
-      # Try different build approaches
-      - echo "Attempting to build Metabase JAR..."
+      # Diagnostic: Check project structure
+      - echo "=== Project Structure Analysis ==="
+      - echo "Files in root directory:"
+      - ls -la
+      - echo "Build configuration files:"
+      - find . -maxdepth 2 -name "build*" -o -name "project*" -o -name "deps*" -o -name "pom*" | head -10
+      - echo "Bin directory contents:"
+      - ls -la bin/ 2>/dev/null || echo "No bin directory"
+      - echo "=== End Analysis ==="
       
-      # Option 1: Use Clojure build commands directly
-      - clojure -T:build uberjar || echo "Clojure build failed, trying alternative..."
+      # Try common build patterns
+      - echo "Attempting build methods..."
       
-      # Option 2: Check for build scripts in the repository
+      # Method 1: Check for standard Metabase build
+      - if [ -f "bin/build" ]; then ./bin/build; fi
+      
+      # Method 2: Leiningen build
+      - if [ -f "project.clj" ]; then clojure -Sdeps '{:deps {leiningen/leiningen {:mvn/version "2.10.0"}}}' -M -m leiningen.core.main uberjar; fi
+      
+      # Method 3: Direct Clojure build
+      - clojure -Sdeps '{:deps {io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "f0c319c"}}}' -T:build uberjar :project "'metabase'" || echo "Tools.build failed"
+      
+      # Method 4: Check for shadow-cljs release (for full build)
+      - if command -v clojure >/dev/null 2>&1; then clojure -M -m shadow.cljs.devtools.cli release app; fi
+      
+      # Final JAR search
       - |
-        if [ -f "build.clj" ]; then
-          echo "Found build.clj, running..."
-          clojure -M -m build
-        elif [ -f "deps.edn" ]; then
-          echo "Found deps.edn, checking aliases..."
-          grep -A 10 ":build" deps.edn || echo "No build alias found"
-        fi
-      
-      # Option 3: Use the jar-download task if available (as a fallback)
-      - ./bin/mage jar-download --help || echo "jar-download not available"
-      
-      # Option 4: Try to find existing build documentation
-      - echo "Checking for build documentation..."
-      - find . -name "README*" -o -name "BUILD*" -o -name "CONTRIBUTING*" | head -5
-      
-      # Look for the JAR file in multiple locations
-      - |
-        echo "Searching for JAR files..."
+        echo "=== Final JAR Search ==="
         find . -name "*.jar" 2>/dev/null | head -10
         TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
         
-        if [ -z "$TARGET_JAR" ]; then 
-          echo "No Metabase JAR found. Checking target directory..."
-          ls -la target/ 2>/dev/null || echo "No target directory"
-          echo "Build failed. Available mage tasks:"
-          ./bin/mage
+        if [ -n "$TARGET_JAR" ]; then
+          echo "Found JAR: $TARGET_JAR"
+          mv $TARGET_JAR $MB_ARTIFACT_NAME
+          echo "Successfully created $MB_ARTIFACT_NAME"
+        else
+          echo "=== BUILD FAILED ==="
+          echo "No JAR file produced. Available build options:"
+          echo "1. Check if this is a complete Metabase fork with build capabilities"
+          echo "2. Verify the build configuration files exist"
+          echo "3. Consider using a pre-built Metabase JAR"
           exit 1
         fi
-        
-        mv $TARGET_JAR $MB_ARTIFACT_NAME
-        echo "Successfully created $MB_ARTIFACT_NAME"
 
 artifacts:
   files:
