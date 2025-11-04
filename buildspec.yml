@@ -57,9 +57,14 @@ phases:
       - mv $TARGET_JAR $MB_ARTIFACT_NAME
       - echo "Successfully created $MB_ARTIFACT_NAME"
 
+  post_build:
+    commands:
+      # This phase is now used just for logging/final checks before artifacts are collected.
+      - echo "Build completed successfully. Preparing artifacts."
+
 artifacts:
   files:
     - $MB_ARTIFACT_NAME
     - appspec.yml 
-    - deploy_scripts/*
+    - deployment/**/* # Ensure all scripts in the directory are included
   discard-paths: no 
