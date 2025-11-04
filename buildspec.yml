@@ -15,10 +15,12 @@ phases:
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
       
-      # Install Java and Clojure
-      - yum update -y
-      - yum install -y java-11-amazon-corretto-devel
-      # Install Clojure tools
+      # Install Java (using apt for Ubuntu)
+      - apt-get update
+      - apt-get install -y openjdk-11-jdk curl wget
+      - java -version
+      
+      # Install Clojure tools directly
       - curl -O https://download.clojure.org/install/clojure-tools-1.11.1.1347.tar.gz
       - mkdir -p /usr/local/lib/clojure
       - tar xzf clojure-tools-1.11.1.1347.tar.gz -C /usr/local/lib/clojure
