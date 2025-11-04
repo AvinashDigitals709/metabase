@@ -3,7 +3,6 @@ version: 0.2
 # Define environment variables
 env:
   variables:
-    # The final name of the JAR file to be deployed
     MB_ARTIFACT_NAME: metabase.jar
 
 phases:
@@ -13,24 +12,19 @@ phases:
       # Install Yarn globally for frontend dependencies
       - npm install -g yarn
 
-      # 1. Install JavaScript/Frontend project dependencies
       - echo "Installing Yarn dependencies..."
-      # Using --frozen-lockfile for deterministic builds
+      # 1. Install JavaScript/Frontend project dependencies
       - yarn install --frozen-lockfile
-
+      
   # Removed pre_build phase for simplicity
   
   build:
     commands:
       # 2. Use the official Metabase release build command from package.json
-      # This single command runs: yarn build-release:cljs && yarn build-release:js
-      # It handles building the Clojure backend, JavaScript frontend, and packaging the Uberjar.
       - echo "Starting Metabase full release build..."
       - yarn build-release
 
       # 3. Find the resulting JAR file.
-      # The yarn build-release script places the final artifact in a known location (usually target/metabase.jar)
-      # We ensure it exists and rename it to the expected artifact name for CodeDeploy.
       - TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
       - if [ -z "$TARGET_JAR" ]; then echo "Error: Metabase JAR not found after release build!"; exit 1; fi
       - mv $TARGET_JAR $MB_ARTIFACT_NAME
