@@ -15,20 +15,24 @@ phases:
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
       
-      # Install Java (using apt for Ubuntu)
+      # Install Java and Clojure
       - apt-get update
       - apt-get install -y openjdk-11-jdk curl wget
+      
+      # Install Clojure using the package manager approach
+      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
+      - chmod +x linux-install-1.11.1.1347.sh
+      - ./linux-install-1.11.1.1347.sh
+      
+      # Update PATH for the current session
+      - export PATH=$PATH:/usr/local/bin
+      - source /etc/profile
+      
+      # Verify installations
       - java -version
-      
-      # Install Clojure tools directly
-      - curl -O https://download.clojure.org/install/clojure-tools-1.11.1.1347.tar.gz
-      - mkdir -p /usr/local/lib/clojure
-      - tar xzf clojure-tools-1.11.1.1347.tar.gz -C /usr/local/lib/clojure
-      - ln -s /usr/local/lib/clojure/clojure-tools-1.11.1.1347/bin/clojure /usr/local/bin/clojure
-      - ln -s /usr/local/lib/clojure/clojure-tools-1.11.1.1347/bin/clj /usr/local/bin/clj
-      
-      # Verify installation
-      - clojure --version
+      - which clojure || echo "Clojure not in PATH"
+      - /usr/local/bin/clojure --version || echo "Clojure not found at /usr/local/bin"
+      - clojure --version || (echo "Clojure command failed, trying alternative..." && /usr/local/bin/clojure --version)
       
       # Install Yarn and dependencies
       - npm install -g yarn
@@ -38,6 +42,7 @@ phases:
   build:
     commands:
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - export PATH=$PATH:/usr/local/bin
       - echo "Starting Metabase full release build..."
       - yarn build-release
       - |
