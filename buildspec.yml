@@ -29,18 +29,10 @@ phases:
       - export PATH=$PATH:/usr/local/bin
       - /usr/local/bin/clojure --version
       
-      # Clean installation but keep yarn.lock
-      - echo "Cleaning previous installations..."
-      - rm -rf node_modules
-      - rm -rf target
-      
-      # Install Yarn and dependencies with frozen lockfile
+      # Install Yarn and dependencies
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
-      - yarn install --frozen-lockfile --ignore-scripts
-      
-      # Install missing dependency
-      - yarn add react-beautiful-dnd@13.1.1
+      - yarn install --frozen-lockfile
       
   build:
     commands:
@@ -48,12 +40,28 @@ phases:
       - export PATH=$PATH:/usr/local/bin
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
-      - echo "Starting Metabase full release build..."
-      - yarn build-release
+      
+      # Build frontend assets first
+      - echo "Building frontend assets..."
+      - yarn build-release:cljs
+      - yarn build-release:js
+      
+      # Now build the backend JAR using the Metabase build tool
+      - echo "Building backend JAR..."
+      - ./bin/mage build
+      
+      # Look for the JAR file in different possible locations
       - |
-        TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+        TARGET_JAR=$(find . -name 'metabase*.jar' | head -n 1)
         if [ -z "$TARGET_JAR" ]; then 
-          echo "Error: Metabase JAR not found after release build!"
+          echo "JAR not found in root, checking target directory..."
+          TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+        fi
+        if [ -z "$TARGET_JAR" ]; then 
+          echo "JAR not found in target, checking other locations..."
+          find . -name "*.jar" | head -10
+          echo "Available build files:"
+          find . -name "build.clj" -o -name "project.clj" -o -name "deps.edn" | head -10
           exit 1
         fi
         mv $TARGET_JAR $MB_ARTIFACT_NAME
