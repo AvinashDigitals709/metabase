@@ -9,12 +9,6 @@ phases:
     commands:
       - echo "Starting Install Phase"
       
-      # Install Node.js 22
-      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
-      - tar -xf node.tar.xz
-      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
-      - node --version
-      
       # Install Java 21
       - apt-get update
       - apt-get install -y openjdk-21-jdk curl wget
@@ -29,39 +23,51 @@ phases:
       - export PATH=$PATH:/usr/local/bin
       - /usr/local/bin/clojure --version
       
-      # Install Yarn and dependencies
-      - npm install -g yarn
-      - echo "Installing Yarn dependencies..."
-      - yarn install --frozen-lockfile
-      
   build:
     commands:
-      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
-      - export PATH=$PATH:/usr/local/bin
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
+      - export PATH=$PATH:/usr/local/bin
       
-      # Build backend JAR first (this is the critical artifact)
-      - echo "Building backend JAR..."
-      - ./bin/mage build
+      # Try different build approaches
+      - echo "Attempting to build Metabase JAR..."
       
-      # Look for JAR immediately after backend build
+      # Option 1: Use Clojure build commands directly
+      - clojure -T:build uberjar || echo "Clojure build failed, trying alternative..."
+      
+      # Option 2: Check for build scripts in the repository
       - |
-        TARGET_JAR=$(find . -name 'metabase*.jar' | head -n 1)
-        if [ -n "$TARGET_JAR" ]; then
-          echo "Backend JAR found, building frontend..."
-          mv $TARGET_JAR $MB_ARTIFACT_NAME
-          
-          # Now build frontend (optional, since we already have the JAR)
-          echo "Building frontend assets..."
-          yarn build-release:cljs
-          yarn build-release:js
-          
-          echo "Successfully created $MB_ARTIFACT_NAME with frontend assets"
-        else
-          echo "Error: Metabase JAR not found after backend build!"
+        if [ -f "build.clj" ]; then
+          echo "Found build.clj, running..."
+          clojure -M -m build
+        elif [ -f "deps.edn" ]; then
+          echo "Found deps.edn, checking aliases..."
+          grep -A 10 ":build" deps.edn || echo "No build alias found"
+        fi
+      
+      # Option 3: Use the jar-download task if available (as a fallback)
+      - ./bin/mage jar-download --help || echo "jar-download not available"
+      
+      # Option 4: Try to find existing build documentation
+      - echo "Checking for build documentation..."
+      - find . -name "README*" -o -name "BUILD*" -o -name "CONTRIBUTING*" | head -5
+      
+      # Look for the JAR file in multiple locations
+      - |
+        echo "Searching for JAR files..."
+        find . -name "*.jar" 2>/dev/null | head -10
+        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
+        
+        if [ -z "$TARGET_JAR" ]; then 
+          echo "No Metabase JAR found. Checking target directory..."
+          ls -la target/ 2>/dev/null || echo "No target directory"
+          echo "Build failed. Available mage tasks:"
+          ./bin/mage
           exit 1
         fi
+        
+        mv $TARGET_JAR $MB_ARTIFACT_NAME
+        echo "Successfully created $MB_ARTIFACT_NAME"
 
 artifacts:
   files:
