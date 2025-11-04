@@ -41,46 +41,27 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       
-      # Build frontend assets first
-      - echo "Building frontend assets..."
-      - yarn build-release:cljs
-      - yarn build-release:js
+      # Build backend JAR first (this is the critical artifact)
+      - echo "Building backend JAR..."
+      - ./bin/mage build
       
-      # Try different backend build methods
-      - echo "Attempting to build backend JAR..."
+      # Look for JAR immediately after backend build
       - |
-        # Try mage first
-        if [ -f "./bin/mage" ]; then
-          echo "Using mage build tool..."
-          ./bin/mage build
+        TARGET_JAR=$(find . -name 'metabase*.jar' | head -n 1)
+        if [ -n "$TARGET_JAR" ]; then
+          echo "Backend JAR found, building frontend..."
+          mv $TARGET_JAR $MB_ARTIFACT_NAME
+          
+          # Now build frontend (optional, since we already have the JAR)
+          echo "Building frontend assets..."
+          yarn build-release:cljs
+          yarn build-release:js
+          
+          echo "Successfully created $MB_ARTIFACT_NAME with frontend assets"
         else
-          echo "Mage not found, trying Clojure build commands..."
-          # Try various Clojure build commands
-          clojure -T:build uberjar || \
-          clojure -X:build:build || \
-          clojure -M:build:build || \
-          echo "All build methods failed"
-        fi
-      
-      # Search for JAR in multiple locations
-      - |
-        echo "Searching for built JAR file..."
-        find . -name "*.jar" 2>/dev/null | grep -v node_modules | head -10
-        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | grep -v node_modules | head -n 1)
-        if [ -z "$TARGET_JAR" ]; then 
-          TARGET_JAR=$(find target/ -name '*.jar' 2>/dev/null | head -n 1)
-        fi
-        if [ -z "$TARGET_JAR" ]; then 
-          echo "Error: No JAR file found after build!"
-          echo "Directory structure:"
-          ls -la
-          echo "Target directory contents:"
-          ls -la target/ 2>/dev/null || echo "No target directory"
+          echo "Error: Metabase JAR not found after backend build!"
           exit 1
         fi
-        echo "Found JAR: $TARGET_JAR"
-        mv $TARGET_JAR $MB_ARTIFACT_NAME
-        echo "Successfully created and renamed $MB_ARTIFACT_NAME"
 
 artifacts:
   files:
