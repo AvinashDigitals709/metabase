@@ -29,18 +29,17 @@ phases:
       - export PATH=$PATH:/usr/local/bin
       - /usr/local/bin/clojure --version
       
-      # Clean installation
+      # Clean installation but keep yarn.lock
       - echo "Cleaning previous installations..."
       - rm -rf node_modules
-      - rm -f yarn.lock
       - rm -rf target
       
-      # Install Yarn and dependencies
+      # Install Yarn and dependencies with frozen lockfile
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
-      - yarn install
+      - yarn install --frozen-lockfile --ignore-scripts
       
-      # Try installing the missing dependency with specific version
+      # Install missing dependency
       - yarn add react-beautiful-dnd@13.1.1
       
   build:
