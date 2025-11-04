@@ -41,19 +41,32 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       
-      # Use the build-for-test script which successfully builds the JAR
-      - echo "Building Metabase JAR using build-for-test..."
-      - ./bin/build-for-test
+      # Build the frontend first
+      - echo "Building Metabase frontend..."
+      - yarn build
+
+      # Then build the complete JAR with frontend included
+      - echo "Building complete Metabase JAR..."
+      - ./bin/build
       
       # Find and rename the JAR
       - |
         echo "Searching for built JAR..."
-        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
+        TARGET_JAR=$(find . -name 'metabase*.jar' -not -name '*standalone*' -not -name '*original*' 2>/dev/null | head -n 1)
         
         if [ -n "$TARGET_JAR" ]; then
           echo "Found JAR: $TARGET_JAR"
           mv $TARGET_JAR $MB_ARTIFACT_NAME
           echo "Successfully created $MB_ARTIFACT_NAME"
+          
+          # Verify the JAR contains frontend resources
+          echo "Verifying frontend resources in JAR..."
+          if jar tf $MB_ARTIFACT_NAME | grep -q "frontend_client"; then
+            echo "✓ Frontend resources found in JAR"
+          else
+            echo "✗ Frontend resources NOT found in JAR"
+            exit 1
+          fi
         else
           echo "Error: No JAR file found after build!"
           exit 1
