@@ -45,42 +45,77 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       
-      # Make build scripts executable
-      - echo "Setting execute permissions on build scripts..."
-      - chmod +x ./bin/*
-      - ls -la ./bin/
+      # Debug: Check what's in the bin directory
+      - echo "Checking bin directory structure..."
+      - ls -la bin/
+      - echo "Checking for build scripts..."
+      - find bin/ -type f -name "*build*" | head -10
       
-      # Build frontend (this succeeded in your last attempt)
+      # Build frontend (this is working)
       - echo "Building Metabase frontend..."
       - yarn build
 
-      # Option 1: Try the build script with explicit bash
-      - echo "Building complete Metabase JAR using bash..."
-      - bash ./bin/build
+      # Option 1: Try using the correct build script from the bin directory
+      - |
+        echo "Looking for actual build scripts..."
+        if [ -f "bin/build.sh" ]; then
+          echo "Found bin/build.sh, executing..."
+          chmod +x bin/build.sh
+          ./bin/build.sh
+        elif [ -f "bin/build-app" ]; then
+          echo "Found bin/build-app, executing..."
+          chmod +x bin/build-app
+          ./bin/build-app
+        else
+          echo "No specific build script found, using Clojure directly"
+        fi
       
-      # If Option 1 fails, try Option 2: Use Clojure directly
+      # Option 2: Use Clojure tools directly (primary method)
+      - echo "Building uberjar with Clojure tools..."
+      - clojure -T:build uberjar :project-oss true
+      
+      # Option 3: Alternative Clojure build commands
       - |
         if [ ! -f "target/uberjar/metabase.jar" ]; then
-          echo "Build script failed, trying Clojure build directly..."
-          clojure -T:build uberjar :project-oss true
+          echo "First build method failed, trying alternative..."
+          clojure -X:build:build
+        fi
+      
+      # Option 4: Another alternative
+      - |
+        if [ ! -f "target/uberjar/metabase.jar" ]; then
+          echo "Second build method failed, trying another alternative..."
+          clojure -M:build:build
         fi
       
       # Find and rename the JAR
       - |
         echo "Searching for built JAR..."
+        # Look in the most common locations
         TARGET_JAR=$(find . -name 'metabase*.jar' -not -name '*standalone*' -not -name '*original*' 2>/dev/null | head -n 1)
         
-        if [ -n "$TARGET_JAR" ]; then
+        if [ -z "$TARGET_JAR" ]; then
+          # If not found, check target directory specifically
+          TARGET_JAR=$(find target -name '*.jar' -type f | head -n 1)
+        fi
+        
+        if [ -n "$TARGET_JIF [ ! -f "target/uberjar/metabase.jar" ]; then
+          echo "Third build method failed, trying lein..."
+          clojure -Sdeps '{:deps {lein/lein {:mvn/version "2.9.10"}}}' -M -m lein uberjar
+        fi
+      AR" ]; then
           echo "Found JAR: $TARGET_JAR"
-          mv "$TARGET_JAR" "$MB_ARTIFACT_NAME"
+          cp "$TARGET_JAR" "$MB_ARTIFACT_NAME"
           echo "Successfully created $MB_ARTIFACT_NAME"
-          
-          # Verify the JAR contains frontend resources
-          echo "Verifying JAR contents..."
-          jar tf "$MB_ARTIFACT_NAME" | head -10
+          echo "JAR size: $(du -h $MB_ARTIFACT_NAME | cut -f1)"
+          echo "Sample JAR contents:"
+          jar tf "$MB_ARTIFACT_NAME" | grep -E "(frontend|resources)" | head -10
         else
           echo "Error: No JAR file found after build!"
-          find . -name '*.jar' -type f
+          echo "Available files in target directory:"
+          find target -type f -name "*.jar" 2>/dev/null || echo "No target directory or no JARs"
+          echo "All JAR files in project:"
+          find . -name "*.jar" -type f 2>/dev/null
           exit 1
         fi
 
