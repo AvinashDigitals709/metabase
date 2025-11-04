@@ -61,9 +61,9 @@ artifacts:
   # The files specified here will be uploaded to the S3 Artifact Bucket
   files:
     - $MB_ARTIFACT_NAME
-    # Include the appspec.yml required for CodeDeploy
-    # You must ensure appspec.yml is present in the source root
+    # appspec.yml is required for CodeDeploy
     - appspec.yml 
     # Include any deployment scripts needed by CodeDeploy
     - deployment/*
-  discard-paths: no # Keep the folder structure relative to the project root
+  # Keep the folder structure relative to the project root
+  discard-paths: no 
