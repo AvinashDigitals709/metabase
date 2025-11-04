@@ -8,11 +8,22 @@ phases:
   install:
     commands:
       - echo "Starting Install Phase"
-      # Install Node.js 22 directly using the binary
+      
+      # Install Node.js 22
       - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
       - tar -xf node.tar.xz
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
+      
+      # Install Clojure and Java (required for Clojure)
+      - yum update -y
+      - yum install -y java-11-amazon-corretto-devel
+      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
+      - chmod +x linux-install-1.11.1.1347.sh
+      - ./linux-install-1.11.1.1347.sh
+      - clojure -e "(println \"Clojure installed successfully\")"
+      
+      # Install Yarn and dependencies
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
       - yarn install --frozen-lockfile
