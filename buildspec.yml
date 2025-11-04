@@ -8,9 +8,10 @@ phases:
   install:
     commands:
       - echo "Starting Install Phase"
-      # Install Node.js 22
-      - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      - apt-get install -y nodejs
+      # Install Node.js 22 directly using the binary
+      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
+      - tar -xf node.tar.xz
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
@@ -18,6 +19,7 @@ phases:
       
   build:
     commands:
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - echo "Starting Metabase full release build..."
       - yarn build-release
       - |
