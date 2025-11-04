@@ -1,49 +1,69 @@
 version: 0.2
 
+# Define environment variables
 env:
   variables:
-    AWS_DEFAULT_REGION: us-east-1
-    BUILD_DIR: target
+    # The final name of the JAR file to be deployed
+    MB_ARTIFACT_NAME: metabase.jar
 
 phases:
   install:
-    runtime-versions:
-      java: corretto17
-      nodejs: 22
     commands:
-      - echo "Installing system and build dependencies..."
-      - apt-get update -y
-      - apt-get install -y git curl
-      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1182.sh
-      - chmod +x linux-install-1.11.1.1182.sh
-      - ./linux-install-1.11.1.1182.sh
+      # 1. Update system packages and install necessary runtimes/tools
+      # Assuming a standard Linux environment (e.g., Ubuntu or Amazon Linux 2 with appropriate base image)
+      # You must ensure your CodeBuild image supports both a recent JDK (e.g., 11 or 17) and Node (e.g., 18+)
+      - echo "Installing dependencies..."
+      # Install Yarn globally for frontend dependencies
       - npm install -g yarn
-      - echo "Environment setup complete."
+
+      # Note: Clojure/Java runtime and Node are usually pre-installed on modern CodeBuild images.
+      # If your image requires manual installation, uncomment the appropriate steps:
+      # - sudo apt-get update -y
+      # - sudo apt-get install -y openjdk-11-jdk # For Clojure/Java
+      # - sudo apt-get install -y nodejs npm
+
+      # 2. Install JavaScript/Frontend project dependencies
+      - echo "Installing Yarn dependencies..."
+      # Using --frozen-lockfile for deterministic builds
+      - yarn install --frozen-lockfile
 
   pre_build:
     commands:
-      - echo "Installing frontend dependencies..."
-      - yarn install
-      - echo "Frontend dependencies installed."
+      # 3. Build Database Drivers (Crucial Metabase step)
+      - echo "Building Metabase database drivers..."
+      - ./bin/build-drivers.sh
+
+      # 4. Optional: Run tests if you have them configured (highly recommended)
+      # - echo "Running tests..."
+      # - yarn test
+      # - clojure -M:test
 
   build:
     commands:
-      - echo "Building frontend for production..."
+      # 5. Build Frontend assets
+      - echo "Building frontend assets..."
+      # This command compiles the React/JS code into static files
       - yarn build
-      - echo "Frontend build complete."
-      - echo "Building Metabase drivers..."
-      - ./bin/build-drivers.sh
-      - echo "Starting Metabase backend build (JAR)..."
-      - lein uberjar
-      - echo "Verifying build output..."
-      - ls -lh target
 
-  post_build:
-    commands:
-      - echo "Metabase build completed successfully."
-      - echo "Artifact path: target/metabase.jar"
+      # 6. Build the Uberjar
+      - echo "Packaging the final Metabase uberjar (backend + frontend assets + drivers)..."
+      # This Metabase script creates the self-contained JAR file
+      - ./bin/build-uberjar.sh
+
+      # 7. Move and rename the artifact to the root of the build output
+      # The final JAR is typically placed in the 'target/' directory
+      - TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+      - if [ -z "$TARGET_JAR" ]; then echo "Error: Metabase JAR not found!"; exit 1; fi
+      - mv $TARGET_JAR $MB_ARTIFACT_NAME
+      - echo "Successfully created $MB_ARTIFACT_NAME"
 
 artifacts:
+  # The files specified here will be uploaded to the S3 Artifact Bucket
   files:
-    - target/metabase.jar
-  discard-paths: yes
+    - $MB_ARTIFACT_NAME
+    # Include the appspec.yml required for CodeDeploy
+    # You must ensure appspec.yml is present in the source root
+    - appspec.yml 
+    # Include any deployment scripts needed by CodeDeploy
+    - deployment/*
+  discard-paths: no # Keep the folder structure relative to the project root
