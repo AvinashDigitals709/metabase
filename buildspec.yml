@@ -8,28 +8,23 @@ env:
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
-      # Install Yarn globally for frontend dependencies
+      - echo "Starting Install Phase"
       - npm install -g yarn
-
       - echo "Installing Yarn dependencies..."
-      # 1. Install JavaScript/Frontend project dependencies
       - yarn install --frozen-lockfile
       
-  # Removed pre_build phase for simplicity
-  
   build:
     commands:
-      # 2. Use the official Metabase release build command from package.json
       - echo "Starting Metabase full release build..."
       - yarn build-release
-
-      # 3. Find the resulting JAR file.
-      - TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
-      - if [ -z "$TARGET_JAR" ]; then echo "Error: Metabase JAR not found after release build!"; exit 1; fi
-      - mv $TARGET_JAR $MB_ARTIFACT_NAME
-      - echo "Successfully created and renamed $MB_ARTIFACT_NAME"
-
+      - |
+        TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+        if [ -z "$TARGET_JAR" ]; then 
+          echo "Error: Metabase JAR not found after release build!"
+          exit 1
+        fi
+        mv $TARGET_JAR $MB_ARTIFACT_NAME
+        echo "Successfully created and renamed $MB_ARTIFACT_NAME"
 
 artifacts:
   files:
