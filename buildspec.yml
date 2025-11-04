@@ -15,31 +15,33 @@ phases:
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
       
-      # Install Java 21 (required for shadow-cljs/Closure Compiler)
+      # Install Java 21
       - apt-get update
       - apt-get install -y openjdk-21-jdk curl wget
-      
-      # Set JAVA_HOME and update PATH for Java 21
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       - java -version
       
-      # Install Clojure using the official installer
+      # Install Clojure
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
-      
-      # Update PATH for the current session
       - export PATH=$PATH:/usr/local/bin
-      
-      # Verify installations
-      - java -version
       - /usr/local/bin/clojure --version
+      
+      # Clean installation
+      - echo "Cleaning previous installations..."
+      - rm -rf node_modules
+      - rm -f yarn.lock
+      - rm -rf target
       
       # Install Yarn and dependencies
       - npm install -g yarn
       - echo "Installing Yarn dependencies..."
-      - yarn install --frozen-lockfile
+      - yarn install
+      
+      # Try installing the missing dependency with specific version
+      - yarn add react-beautiful-dnd@13.1.1
       
   build:
     commands:
