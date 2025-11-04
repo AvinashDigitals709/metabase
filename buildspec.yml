@@ -9,52 +9,53 @@ phases:
     commands:
       - echo "Starting Install Phase"
       
+      # Install Node.js 22
+      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
+      - tar -xf node.tar.xz
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - node --version
+      
       # Install Java 21
       - apt-get update
       - apt-get install -y openjdk-21-jdk curl wget
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
+      - java -version
       
       # Install Clojure
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
       - export PATH=$PATH:/usr/local/bin
+      - /usr/local/bin/clojure --version
+      
+      # Install Yarn and dependencies
+      - npm install -g yarn
+      - echo "Installing Yarn dependencies..."
+      - yarn install --frozen-lockfile
       
   build:
     commands:
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - export PATH=$PATH:/usr/local/bin
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
-      - export PATH=$PATH:/usr/local/bin
       
-      # Diagnostic: Check project structure
-      - echo "=== Project Structure Analysis ==="
-      - echo "Files in root directory:"
-      - ls -la
-      - echo "Build configuration files:"
-      - find . -maxdepth 2 -name "build*" -o -name "project*" -o -name "deps*" -o -name "pom*" | head -10
-      - echo "Bin directory contents:"
-      - ls -la bin/ 2>/dev/null || echo "No bin directory"
-      - echo "=== End Analysis ==="
+      # Use the proper build scripts from the bin directory
+      - echo "Using Metabase build scripts..."
       
-      # Try common build patterns
-      - echo "Attempting build methods..."
+      # Option 1: Try the main build script
+      - ./bin/build || echo "bin/build failed, trying alternative..."
       
-      # Method 1: Check for standard Metabase build
-      - if [ -f "bin/build" ]; then ./bin/build; fi
+      # Option 2: Try build.sh
+      - ./bin/build.sh || echo "build.sh failed, trying build-for-test..."
       
-      # Method 2: Leiningen build
-      - if [ -f "project.clj" ]; then clojure -Sdeps '{:deps {leiningen/leiningen {:mvn/version "2.10.0"}}}' -M -m leiningen.core.main uberjar; fi
+      # Option 3: Try build-for-test (often works for production too)
+      - ./bin/build-for-test || echo "build-for-test failed"
       
-      # Method 3: Direct Clojure build
-      - clojure -Sdeps '{:deps {io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "f0c319c"}}}' -T:build uberjar :project "'metabase'" || echo "Tools.build failed"
-      
-      # Method 4: Check for shadow-cljs release (for full build)
-      - if command -v clojure >/dev/null 2>&1; then clojure -M -m shadow.cljs.devtools.cli release app; fi
-      
-      # Final JAR search
+      # Look for the JAR file
       - |
-        echo "=== Final JAR Search ==="
+        echo "Searching for built JAR..."
         find . -name "*.jar" 2>/dev/null | head -10
         TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
         
@@ -63,11 +64,9 @@ phases:
           mv $TARGET_JAR $MB_ARTIFACT_NAME
           echo "Successfully created $MB_ARTIFACT_NAME"
         else
-          echo "=== BUILD FAILED ==="
-          echo "No JAR file produced. Available build options:"
-          echo "1. Check if this is a complete Metabase fork with build capabilities"
-          echo "2. Verify the build configuration files exist"
-          echo "3. Consider using a pre-built Metabase JAR"
+          echo "No JAR found after build attempts"
+          echo "Trying to understand build process from documentation..."
+          cat bin/build-mb.md 2>/dev/null || echo "No build documentation found"
           exit 1
         fi
 
