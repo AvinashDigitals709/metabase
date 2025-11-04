@@ -46,24 +46,39 @@ phases:
       - yarn build-release:cljs
       - yarn build-release:js
       
-      # Now build the backend JAR using the Metabase build tool
-      - echo "Building backend JAR..."
-      - ./bin/mage build
-      
-      # Look for the JAR file in different possible locations
+      # Try different backend build methods
+      - echo "Attempting to build backend JAR..."
       - |
-        TARGET_JAR=$(find . -name 'metabase*.jar' | head -n 1)
+        # Try mage first
+        if [ -f "./bin/mage" ]; then
+          echo "Using mage build tool..."
+          ./bin/mage build
+        else
+          echo "Mage not found, trying Clojure build commands..."
+          # Try various Clojure build commands
+          clojure -T:build uberjar || \
+          clojure -X:build:build || \
+          clojure -M:build:build || \
+          echo "All build methods failed"
+        fi
+      
+      # Search for JAR in multiple locations
+      - |
+        echo "Searching for built JAR file..."
+        find . -name "*.jar" 2>/dev/null | grep -v node_modules | head -10
+        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | grep -v node_modules | head -n 1)
         if [ -z "$TARGET_JAR" ]; then 
-          echo "JAR not found in root, checking target directory..."
-          TARGET_JAR=$(find target/ -name 'metabase*.jar' | head -n 1)
+          TARGET_JAR=$(find target/ -name '*.jar' 2>/dev/null | head -n 1)
         fi
         if [ -z "$TARGET_JAR" ]; then 
-          echo "JAR not found in target, checking other locations..."
-          find . -name "*.jar" | head -10
-          echo "Available build files:"
-          find . -name "build.clj" -o -name "project.clj" -o -name "deps.edn" | head -10
+          echo "Error: No JAR file found after build!"
+          echo "Directory structure:"
+          ls -la
+          echo "Target directory contents:"
+          ls -la target/ 2>/dev/null || echo "No target directory"
           exit 1
         fi
+        echo "Found JAR: $TARGET_JAR"
         mv $TARGET_JAR $MB_ARTIFACT_NAME
         echo "Successfully created and renamed $MB_ARTIFACT_NAME"
 
