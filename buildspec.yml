@@ -15,24 +15,21 @@ phases:
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
       
-      # Install Java and Clojure
+      # Install Java and dependencies
       - apt-get update
       - apt-get install -y openjdk-11-jdk curl wget
       
-      # Install Clojure using the package manager approach
+      # Install Clojure using the official installer
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
       
       # Update PATH for the current session
       - export PATH=$PATH:/usr/local/bin
-      - source /etc/profile
       
       # Verify installations
       - java -version
-      - which clojure || echo "Clojure not in PATH"
-      - /usr/local/bin/clojure --version || echo "Clojure not found at /usr/local/bin"
-      - clojure --version || (echo "Clojure command failed, trying alternative..." && /usr/local/bin/clojure --version)
+      - /usr/local/bin/clojure --version
       
       # Install Yarn and dependencies
       - npm install -g yarn
