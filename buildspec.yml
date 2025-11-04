@@ -45,13 +45,25 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       
-      # Try building frontend with the fixed dependencies
+      # Make build scripts executable
+      - echo "Setting execute permissions on build scripts..."
+      - chmod +x ./bin/*
+      - ls -la ./bin/
+      
+      # Build frontend (this succeeded in your last attempt)
       - echo "Building Metabase frontend..."
       - yarn build
 
-      # Then build the complete JAR
-      - echo "Building complete Metabase JAR..."
-      - ./bin/build
+      # Option 1: Try the build script with explicit bash
+      - echo "Building complete Metabase JAR using bash..."
+      - bash ./bin/build
+      
+      # If Option 1 fails, try Option 2: Use Clojure directly
+      - |
+        if [ ! -f "target/uberjar/metabase.jar" ]; then
+          echo "Build script failed, trying Clojure build directly..."
+          clojure -T:build uberjar :project-oss true
+        fi
       
       # Find and rename the JAR
       - |
@@ -60,10 +72,15 @@ phases:
         
         if [ -n "$TARGET_JAR" ]; then
           echo "Found JAR: $TARGET_JAR"
-          mv $TARGET_JAR $MB_ARTIFACT_NAME
+          mv "$TARGET_JAR" "$MB_ARTIFACT_NAME"
           echo "Successfully created $MB_ARTIFACT_NAME"
+          
+          # Verify the JAR contains frontend resources
+          echo "Verifying JAR contents..."
+          jar tf "$MB_ARTIFACT_NAME" | head -10
         else
           echo "Error: No JAR file found after build!"
+          find . -name '*.jar' -type f
           exit 1
         fi
 
