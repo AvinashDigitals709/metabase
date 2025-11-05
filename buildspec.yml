@@ -43,6 +43,7 @@ phases:
       
       # Use the build-for-test script which successfully builds the JAR
       - echo "Building Metabase JAR using build-for-test..."
+      - chmod +x ./bin/build-for-test
       - ./bin/build-for-test
       
       # Find and rename the JAR
