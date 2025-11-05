@@ -1,31 +1,32 @@
 version: 0.2
 
-env:
-  variables:
-    MB_SKIP_INTERACTIVE: "true"
-    MB_EDITION: "oss"
-    OUTPUT_DIR: "target/uberjar"
-
 phases:
   install:
     runtime-versions:
-      java: corretto21
+      java: corretto17
     commands:
-      - echo "🔧 Installing dependencies..."
+      - echo "🔧 Updating system packages..."
       - apt-get update -y
-      - apt-get install -y curl wget git unzip bash xz-utils
-      - echo "⚙️ Installing Node.js 22 manually..."
+
+      - echo "🧹 Removing any preinstalled Node.js..."
+      - apt-get remove -y nodejs || true
+
+      - echo "📦 Installing Node.js 22..."
       - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       - apt-get install -y nodejs
       - node -v
       - npm -v
+
       - echo "⚙️ Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
+      - clj -h || true
+
       - echo "📦 Installing Yarn..."
       - npm install --global yarn
       - yarn -v
+
       - echo "✅ Environment setup complete."
 
   pre_build:
@@ -34,28 +35,21 @@ phases:
       - cd $CODEBUILD_SRC_DIR
       - echo "📁 Installing frontend dependencies..."
       - yarn install --frozen-lockfile || yarn install
-      - echo "📦 Adding missing dependency react-beautiful-dnd..."
-      - yarn add react-beautiful-dnd
-      - echo "✅ Frontend dependencies ready."
 
   build:
     commands:
-      - echo "🏗️ Building Metabase application..."
-      - chmod +x ./bin/build.sh
-      - MB_EDITION=$MB_EDITION MB_SKIP_INTERACTIVE=$MB_SKIP_INTERACTIVE ./bin/build.sh
-      - echo "✅ Build completed. JAR should be in $OUTPUT_DIR"
-      - ls -lh $OUTPUT_DIR
+      - echo "🏗️ Building Metabase JAR..."
+      - ./bin/build
 
   post_build:
     commands:
-      - echo "📦 Preparing artifacts for deployment..."
-      - mkdir -p artifacts/scripts
-      - cp $OUTPUT_DIR/metabase.jar artifacts/
-      - cp appspec.yml artifacts/
-      - cp -r scripts/* artifacts/scripts/
-      - echo "✅ All artifacts prepared for deployment."
+      - echo "📦 Moving build artifacts..."
+      - mkdir -p artifacts
+      - cp target/uberjar/metabase.jar artifacts/
+      - echo "✅ Build complete."
 
 artifacts:
   files:
-    - artifacts/**/*
-  discard-paths: no
+    - artifacts/metabase.jar
+    - appspec.yml
+    - scripts/**/*
