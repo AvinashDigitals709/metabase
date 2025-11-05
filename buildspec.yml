@@ -33,6 +33,7 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
       - echo "Building Metabase JAR using build-for-test..."
+      - chmod +x ./bin/build-for-test
       - ./bin/build-for-test
       - |
         echo "Searching for built JAR..."
