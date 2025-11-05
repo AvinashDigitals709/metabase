@@ -44,7 +44,7 @@ phases:
       - node -v
       - cd $CODEBUILD_SRC_DIR
       
-      # ⭐ NEW: Set execute permission for the build script
+      # Setting execute permission for the build script
       - echo "⚙️ Setting execute permission for ./bin/build..."
       - chmod +x ./bin/build
       
@@ -54,8 +54,8 @@ phases:
   build:
     commands:
       - echo "🏗️ Building Metabase JAR..."
-      - **bash ./bin/build** # Explicitly run with bash
-
+      - bash ./bin/build # FIX: Explicitly run the script using bash
+      
   post_build:
     commands:
       - echo "📦 Moving build artifacts..."
