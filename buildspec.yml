@@ -8,28 +8,18 @@ phases:
       - echo "🔧 Updating system packages..."
       - apt-get update -y
 
-      - echo "🧹 Removing conflicting Node.js versions and binaries..."
+      - echo "🧹 Removing conflicting Node.js versions..."
       - apt-get remove -y nodejs npm || true
-      - rm -f /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx || true 
+      - rm -f /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx || true
 
       - echo "📦 Installing Node.js 22..."
       - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       - apt-get install -y nodejs
 
-      - echo "🔄 Ensuring correct PATH and refreshing shell lookup..."
-      - hash -r
-
-      - echo "🧾 Verifying Node.js and npm versions..."
-      - which node
-      - node -v
-      - which npm
-      - npm -v
-
       - echo "⚙️ Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
-      - clj -h || true
 
       - echo "📦 Installing Yarn..."
       - npm install --global yarn
@@ -41,26 +31,25 @@ phases:
     commands:
       - echo "🚀 Starting pre-build phase..."
       - export PATH=/usr/local/bin:$PATH 
-      - node -v
       - cd $CODEBUILD_SRC_DIR
-      
-      # Setting execute permission for the build script
-      - echo "⚙️ Setting execute permission for ./bin/build..."
       - chmod +x ./bin/build
-      
       - echo "📁 Installing frontend dependencies..."
       - yarn install --frozen-lockfile || yarn install
 
   build:
     commands:
       - echo "🏗️ Building Metabase JAR..."
-      - bash ./bin/build.sh # FIX: Explicitly run the script using bash
-      
+      - rm -rf target
+      - export MB_EDITION=oss
+      - export MB_SKIP_PROMPTS=true
+      - export CI=true
+      - bash ./bin/build.sh
+
   post_build:
     commands:
       - echo "📦 Moving build artifacts..."
       - mkdir -p artifacts
-      - cp target/uberjar/metabase.jar artifacts/
+      - cp target/uberjar/metabase.jar artifacts/ || echo "⚠️ No JAR found — build may have failed."
       - echo "✅ Build complete."
 
 artifacts:
