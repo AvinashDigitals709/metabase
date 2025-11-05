@@ -8,13 +8,21 @@ phases:
       - echo "🔧 Updating system packages..."
       - apt-get update -y
 
-      - echo "🧹 Removing any preinstalled Node.js..."
-      - apt-get remove -y nodejs || true
+      - echo "🧹 Removing preinstalled Node.js (v18)..."
+      - apt-get remove -y nodejs npm || true
 
       - echo "📦 Installing Node.js 22..."
       - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       - apt-get install -y nodejs
+
+      - echo "🔄 Updating PATH to prioritize /usr/local/bin..."
+      - export PATH=/usr/local/bin:$PATH
+      - hash -r  # refresh shell command lookup
+
+      - echo "🧾 Verifying Node.js and npm versions..."
+      - which node
       - node -v
+      - which npm
       - npm -v
 
       - echo "⚙️ Installing Clojure..."
@@ -32,6 +40,8 @@ phases:
   pre_build:
     commands:
       - echo "🚀 Starting pre-build phase..."
+      - export PATH=/usr/local/bin:$PATH
+      - node -v  # double-check node version again here
       - cd $CODEBUILD_SRC_DIR
       - echo "📁 Installing frontend dependencies..."
       - yarn install --frozen-lockfile || yarn install
