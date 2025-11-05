@@ -2,70 +2,54 @@ version: 0.2
 
 env:
   variables:
-    MB_ARTIFACT_NAME: metabase.jar
+    MB_EDITION: "oss"
+    OUTPUT_DIR: "target/uberjar"
 
 phases:
   install:
+    runtime-versions:
+      java: corretto21
+      nodejs: 18
     commands:
-      - echo "Starting Install Phase"
-      
-      # Install Node.js 22
-      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
-      - tar -xf node.tar.xz
-      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
-      - node --version
-      
-      # Install Java 21
-      - apt-get update
-      - apt-get install -y openjdk-21-jdk curl wget
-      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-      - export PATH=$JAVA_HOME/bin:$PATH
-      - java -version
-      
-      # Install Clojure
-      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
-      - chmod +x linux-install-1.11.1.1347.sh
-      - ./linux-install-1.11.1.1347.sh
-      - export PATH=$PATH:/usr/local/bin
-      - /usr/local/bin/clojure --version
-      
-      # Install Yarn and dependencies
-      - npm install -g yarn
-      - echo "Installing Yarn dependencies..."
+      - echo "🔧 Installing required dependencies..."
+      - apt-get update -y
+      - apt-get install -y curl wget git unzip bash
+      - echo "Installing Clojure..."
+      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
+      - chmod +x linux-install-1.11.1.1413.sh
+      - ./linux-install-1.11.1.1413.sh
+      - echo "Installing Yarn..."
+      - npm install --global yarn
+      - echo "✅ Environment setup complete."
+
+  pre_build:
+    commands:
+      - echo "🚀 Preparing build environment..."
+      - cd $CODEBUILD_SRC_DIR
+      - echo "Installing frontend dependencies..."
       - yarn install --frozen-lockfile
-      
+
   build:
     commands:
-      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
-      - export PATH=$PATH:/usr/local/bin
-      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-      - export PATH=$JAVA_HOME/bin:$PATH
-      
-      # Use the build-for-test script which successfully builds the JAR
-      - echo "Building Metabase JAR using build-for-test..."
-      - chmod +x ./bin/build-for-test
+      - echo "🏗️ Building Metabase Uberjar..."
       - chmod +x ./bin/build.sh
-      - chmod +x ./bin/build
+      - MB_EDITION=$MB_EDITION ./bin/build.sh
+      - echo "✅ Metabase build complete."
+      - ls -lh $OUTPUT_DIR
 
-      - ./bin/build.sh
-      
-      # Find and rename the JAR
-      - |
-        echo "Searching for built JAR..."
-        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
-        
-        if [ -n "$TARGET_JAR" ]; then
-          echo "Found JAR: $TARGET_JAR"
-          mv $TARGET_JAR $MB_ARTIFACT_NAME
-          echo "Successfully created $MB_ARTIFACT_NAME"
-        else
-          echo "Error: No JAR file found after build!"
-          exit 1
-        fi
+  post_build:
+    commands:
+      - echo "📦 Preparing deployment package..."
+      - mkdir -p artifacts scripts
+      - cp $OUTPUT_DIR/metabase.jar artifacts/
+      - echo "Including appspec.yml and scripts folder..."
+      - cp appspec.yml .
+      - echo "✅ Packaging complete. Listing contents:"
+      - ls -R
 
 artifacts:
   files:
-    - $MB_ARTIFACT_NAME
-    - appspec.yml 
+    - artifacts/**/*
+    - appspec.yml
     - scripts/**/*
   discard-paths: no
