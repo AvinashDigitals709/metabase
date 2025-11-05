@@ -49,10 +49,6 @@ phases:
   build:
     commands:
       - echo "🏗️ Starting Metabase build..."
-      - rm -rf target
-      - echo "🧩 Building ClojureScript and frontend..."
-      - yarn build-release:cljs || { echo "❌ ClojureScript build failed"; exit 1; }
-      - yarn build-release:js || { echo "❌ Frontend JS build failed"; exit 1; }
       - echo "⚙️ Building backend uberjar..."
       - ./bin/build.sh || { echo "❌ Backend build failed"; exit 1; }
 
