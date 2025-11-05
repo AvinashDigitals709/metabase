@@ -5,7 +5,6 @@ env:
     MB_EDITION: "oss"
     MB_SKIP_PROMPTS: "true"
     CI: "true"
-  # Increase memory limits if needed for large frontend builds
   shell: bash
 
 phases:
@@ -38,26 +37,25 @@ phases:
   pre_build:
     commands:
       - echo "🚀 Starting pre-build phase..."
-      - export PATH=/usr/local/bin:$PATH
       - cd $CODEBUILD_SRC_DIR
-      - echo "📁 Cleaning old build caches..."
-      - rm -rf node_modules target || true
-      - echo "📁 Installing frontend dependencies..."
+      - echo "📁 Installing dependencies..."
       - yarn install --frozen-lockfile || yarn install
-      - echo "✅ Dependencies installed successfully."
+      - echo "✅ Dependencies installed."
 
   build:
     commands:
-      - echo "🏗️ Starting Metabase build..."
-      - echo "⚙️ Building backend uberjar..."
-      - ./bin/build.sh || { echo "❌ Backend build failed"; exit 1; }
+      - echo "🏗️ Building Metabase Uberjar..."
+      - export MB_EDITION=${MB_EDITION:-oss}
+      - chmod +x ./bin/build.sh
+      - ./bin/build.sh
+      - echo "✅ Build script finished."
 
   post_build:
     commands:
-      - echo "📦 Moving build artifacts..."
+      - echo "📦 Preparing build artifacts..."
       - mkdir -p artifacts
-      - cp target/uberjar/metabase.jar artifacts/ || { echo "⚠️ No metabase.jar found"; exit 1; }
-      - echo "✅ Build completed successfully."
+      - cp target/uberjar/metabase.jar artifacts/ || { echo "❌ metabase.jar not found"; exit 1; }
+      - echo "✅ Metabase Uberjar successfully built and packaged."
 
 artifacts:
   files:
@@ -68,6 +66,6 @@ artifacts:
 
 cache:
   paths:
-    - ~/.m2/**/*   # Maven dependencies
+    - ~/.m2/**/*          # Maven cache
+    - ~/.npm/**/*         # npm cache
     - ~/.yarn-cache/**/*  # Yarn cache
-    - ~/.npm/**/*  # npm cache
