@@ -54,7 +54,7 @@ phases:
   build:
     commands:
       - echo "🏗️ Building Metabase JAR..."
-      - ./bin/build # This should now execute successfully
+      - **bash ./bin/build** # Explicitly run with bash
 
   post_build:
     commands:
