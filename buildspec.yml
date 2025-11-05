@@ -47,7 +47,7 @@ phases:
       - chmod +x ./bin/build.sh
       - chmod +x ./bin/build
 
-      - ./bin/build-for-test
+      - ./bin/build.sh
       
       # Find and rename the JAR
       - |
