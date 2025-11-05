@@ -8,20 +8,23 @@ phases:
       - echo "🔧 Updating system packages..."
       - apt-get update -y
 
-      - echo "🧹 Removing preinstalled Node.js (v18)..."
+      # ➡️ FIX: Aggressively remove pre-existing Node/npm and binaries that might conflict
+      - echo "🧹 Removing conflicting Node.js versions and binaries..."
       - apt-get remove -y nodejs npm || true
+      - rm -f /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx || true 
 
       - echo "📦 Installing Node.js 22..."
       - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       - apt-get install -y nodejs
 
-      - echo "🔄 Updating PATH to prioritize /usr/local/bin..."
-      - export PATH=/usr/local/bin:$PATH
-      - hash -r  # refresh shell command lookup
+      - echo "🔄 Ensuring correct PATH and refreshing shell lookup..."
+      # ⚠️ CRITICAL CHANGE: Removed 'export PATH=/usr/local/bin:$PATH' 
+      # The system PATH should now correctly find the newly installed Node 22 in /usr/bin
+      - hash -r
 
       - echo "🧾 Verifying Node.js and npm versions..."
       - which node
-      - node -v
+      - node -v  # This should now output v22.x.x
       - which npm
       - npm -v
 
@@ -40,11 +43,11 @@ phases:
   pre_build:
     commands:
       - echo "🚀 Starting pre-build phase..."
-      - export PATH=/usr/local/bin:$PATH
-      - node -v  # double-check node version again here
+      - export PATH=/usr/local/bin:$PATH # Re-exporting PATH here is okay, but less critical now that /usr/local/bin/node is deleted
+      - node -v  # Should still show v22.x.x
       - cd $CODEBUILD_SRC_DIR
       - echo "📁 Installing frontend dependencies..."
-      - yarn install --frozen-lockfile || yarn install
+      - yarn install --frozen-lockfile || yarn install # This should now SUCCEED
 
   build:
     commands:
