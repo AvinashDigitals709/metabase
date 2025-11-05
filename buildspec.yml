@@ -9,7 +9,7 @@ phases:
   install:
     runtime-versions:
       java: corretto21
-      nodejs: 18
+      nodejs: 22
     commands:
       - echo "🔧 Installing required dependencies..."
       - apt-get update -y
@@ -19,13 +19,15 @@ phases:
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
       - echo "Installing Yarn..."
-      - npm install --global yarn
+      - corepack enable  # Node.js 22 includes Yarn via Corepack
       - echo "✅ Environment setup complete."
 
   pre_build:
     commands:
       - echo "🚀 Preparing build environment..."
       - cd $CODEBUILD_SRC_DIR
+      - node -v
+      - yarn -v
       - echo "Installing frontend dependencies..."
       - yarn install --frozen-lockfile
 
@@ -40,7 +42,7 @@ phases:
   post_build:
     commands:
       - echo "📦 Preparing deployment package..."
-      - mkdir -p artifacts scripts
+      - mkdir -p artifacts
       - cp $OUTPUT_DIR/metabase.jar artifacts/
       - echo "Including appspec.yml and scripts folder..."
       - cp appspec.yml .
