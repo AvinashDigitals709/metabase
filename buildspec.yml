@@ -3,125 +3,80 @@ version: 0.2
 env:
   variables:
     MB_ARTIFACT_NAME: metabase.jar
+    ARTIFACT_DIR: artifacts
 
 phases:
   install:
     commands:
-      - echo "Starting Install Phase"
-      
+      - echo "===== INSTALL PHASE STARTED ====="
+
+      # Install dependencies
+      - apt-get update -y
+      - apt-get install -y curl wget xz-utils openjdk-21-jdk
+
+      # Setup environment variables
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - java -version
+
       # Install Node.js 22
+      - echo "Installing Node.js 22..."
       - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
       - tar -xf node.tar.xz
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
-      
-      # Install Java 21
-      - apt-get update
-      - apt-get install -y openjdk-21-jdk curl wget
-      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-      - export PATH=$JAVA_HOME/bin:$PATH
-      - java -version
-      
+
       # Install Clojure
+      - echo "Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
       - export PATH=$PATH:/usr/local/bin
-      - /usr/local/bin/clojure --version
-      
-      # Install Yarn and dependencies
-      - npm install -g yarn
-      - echo "Installing Yarn dependencies..."
-      - yarn install --frozen-lockfile
-      
-      # Install missing dependency
-      - echo "Installing missing react-beautiful-dnd..."
-      - yarn add react-beautiful-dnd
-      
+      - clojure -Sdescribe || echo "Clojure installed"
+
+      # Install Yarn if package.json exists
+      - if [ -f package.json ]; then
+          npm install -g yarn;
+          echo "Installing Yarn dependencies...";
+          yarn install --frozen-lockfile;
+        else
+          echo "No package.json found, skipping Yarn install.";
+        fi
+
   build:
     commands:
+      - echo "===== BUILD PHASE STARTED ====="
       - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - export PATH=$PATH:/usr/local/bin
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export PATH=$JAVA_HOME/bin:$PATH
-      
-      # Debug: Check what's in the bin directory
-      - echo "Checking bin directory structure..."
-      - ls -la bin/
-      - echo "Checking for build scripts..."
-      - find bin/ -type f -name "*build*" | head -10
-      
-      # Build frontend (this is working)
-      - echo "Building Metabase frontend..."
-      - yarn build
 
-      # Option 1: Try using the correct build script from the bin directory
-      - |
-        echo "Looking for actual build scripts..."
-        if [ -f "bin/build.sh" ]; then
-          echo "Found bin/build.sh, executing..."
-          chmod +x bin/build.sh
-          ./bin/build.sh
-        elif [ -f "bin/build-app" ]; then
-          echo "Found bin/build-app, executing..."
-          chmod +x bin/build-app
-          ./bin/build-app
-        else
-          echo "No specific build script found, using Clojure directly"
-        fi
-      
-      # Option 2: Use Clojure tools directly (primary method)
-      - echo "Building uberjar with Clojure tools..."
-      - clojure -T:build uberjar :project-oss true
-      
-      # Option 3: Alternative Clojure build commands
-      - |
-        if [ ! -f "target/uberjar/metabase.jar" ]; then
-          echo "First build method failed, trying alternative..."
-          clojure -X:build:build
-        fi
-      
-      # Option 4: Another alternative
-      - |
-        if [ ! -f "target/uberjar/metabase.jar" ]; then
-          echo "Second build method failed, trying another alternative..."
-          clojure -M:build:build
-        fi
-      
-      # Find and rename the JAR
+      # Build Metabase JAR
+      - echo "Building Metabase JAR using build-for-test..."
+      - ./bin/build-for-test
+
+      # Locate and prepare JAR
+      - mkdir -p $ARTIFACT_DIR
       - |
         echo "Searching for built JAR..."
-        # Look in the most common locations
-        TARGET_JAR=$(find . -name 'metabase*.jar' -not -name '*standalone*' -not -name '*original*' 2>/dev/null | head -n 1)
-        
-        if [ -z "$TARGET_JAR" ]; then
-          # If not found, check target directory specifically
-          TARGET_JAR=$(find target -name '*.jar' -type f | head -n 1)
-        fi
-        
-        if [ -n "$TARGET_JIF [ ! -f "target/uberjar/metabase.jar" ]; then
-          echo "Third build method failed, trying lein..."
-          clojure -Sdeps '{:deps {lein/lein {:mvn/version "2.9.10"}}}' -M -m lein uberjar
-        fi
-      AR" ]; then
+        TARGET_JAR=$(find . -type f -name 'metabase*.jar' | head -n 1)
+        if [ -n "$TARGET_JAR" ]; then
           echo "Found JAR: $TARGET_JAR"
-          cp "$TARGET_JAR" "$MB_ARTIFACT_NAME"
-          echo "Successfully created $MB_ARTIFACT_NAME"
-          echo "JAR size: $(du -h $MB_ARTIFACT_NAME | cut -f1)"
-          echo "Sample JAR contents:"
-          jar tf "$MB_ARTIFACT_NAME" | grep -E "(frontend|resources)" | head -10
+          mv "$TARGET_JAR" "$ARTIFACT_DIR/$MB_ARTIFACT_NAME"
+          echo "Moved JAR to $ARTIFACT_DIR/$MB_ARTIFACT_NAME"
         else
           echo "Error: No JAR file found after build!"
-          echo "Available files in target directory:"
-          find target -type f -name "*.jar" 2>/dev/null || echo "No target directory or no JARs"
-          echo "All JAR files in project:"
-          find . -name "*.jar" -type f 2>/dev/null
           exit 1
         fi
 
 artifacts:
   files:
-    - $MB_ARTIFACT_NAME
-    - appspec.yml 
+    - artifacts/*
+    - appspec.yml
     - scripts/**/*
   discard-paths: no
+
+cache:
+  paths:
+    - ~/.m2/**/*    # Clojure/maven cache
+    - ~/.yarn-cache/**/*    # Yarn cache
