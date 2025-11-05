@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    MB_SKIP_INTERACTIVE: "true"   # Skip interactive build prompts
+    MB_SKIP_INTERACTIVE: "true"
     MB_EDITION: "oss"
     OUTPUT_DIR: "target/uberjar"
 
@@ -10,17 +10,22 @@ phases:
   install:
     runtime-versions:
       java: corretto21
-      nodejs: 18
     commands:
       - echo "🔧 Installing dependencies..."
       - apt-get update -y
-      - apt-get install -y curl wget git unzip bash
+      - apt-get install -y curl wget git unzip bash xz-utils
+      - echo "⚙️ Installing Node.js 22 manually..."
+      - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      - apt-get install -y nodejs
+      - node -v
+      - npm -v
       - echo "⚙️ Installing Clojure..."
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1413.sh
       - chmod +x linux-install-1.11.1.1413.sh
       - ./linux-install-1.11.1.1413.sh
       - echo "📦 Installing Yarn..."
       - npm install --global yarn
+      - yarn -v
       - echo "✅ Environment setup complete."
 
   pre_build:
