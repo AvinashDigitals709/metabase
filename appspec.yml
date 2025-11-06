@@ -2,26 +2,26 @@ version: 0.0
 os: linux
 
 files:
-  - source: metabase-deploy.zip/metabase.jar
+  - source: metabase.jar
     destination: /opt/metabase/
 
 hooks:
   BeforeInstall:
-    - location: artifacts/scripts/clean_old_build.sh
+    - location: scripts/clean_old_build.sh
       runas: root
 
   ApplicationStop:
-    - location: artifacts/scripts/stop_metabase.sh
+    - location: scripts/stop_metabase.sh
       runas: root
 
   AfterInstall:
-    - location: artifacts/scripts/install_metabase.sh
+    - location: scripts/install_metabase.sh
       runas: root
 
   ApplicationStart:
-    - location: artifacts/scripts/start_metabase.sh
+    - location: scripts/start_metabase.sh
       runas: root
 
   ValidateService:
-    - location: artifacts/scripts/healthcheck.sh
+    - location: scripts/healthcheck.sh
       runas: root
