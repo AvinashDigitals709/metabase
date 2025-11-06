@@ -43,6 +43,7 @@ phases:
       
       # Use the proper build scripts from the bin directory
       - echo "Using Metabase build scripts..."
+      - chmod +x ./bin/*
       
       # Option 1: Try the main build script
       - ./bin/build || echo "bin/build failed, trying alternative..."
