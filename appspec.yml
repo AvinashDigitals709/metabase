@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 
 files:
-  - source: artifacts/metabase.jar
+  - source: metabase-deploy.zip/metabase.jar
     destination: /opt/metabase/
 
 hooks:
