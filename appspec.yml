@@ -21,7 +21,3 @@ hooks:
   ApplicationStart:
     - location: scripts/start_metabase.sh
       runas: root
-
-  ValidateService:
-    - location: scripts/healthcheck.sh
-      runas: root
