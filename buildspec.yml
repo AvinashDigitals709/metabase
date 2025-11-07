@@ -3,57 +3,60 @@ version: 0.2
 env:
   variables:
     MB_ARTIFACT_NAME: metabase.jar
-  compute-type: BUILD_GENERAL1_LARGE  # Use at least large (7 GB RAM)
-  shell: bash
 
 phases:
   install:
-    runtime-versions:
-      java: corretto21
-      nodejs: 22
     commands:
-      - echo "=== INSTALL PHASE STARTED ==="
-      - apt-get update -y
-      - apt-get install -y git curl wget xz-utils build-essential
-      - echo "Java version:"
-      - java -version
-      - echo "Node version:"
+      - echo "Starting Install Phase"
+      
+      # Install Node.js 22
+      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
+      - tar -xf node.tar.xz
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
       - node --version
-      - npm install -g yarn
-      - yarn --version
-
+      
+      # Install Java 21
+      - apt-get update -y
+      - apt-get install -y openjdk-21-jdk curl wget xz-utils git
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - java -version
+      
       # Install Clojure
       - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
       - chmod +x linux-install-1.11.1.1347.sh
       - ./linux-install-1.11.1.1347.sh
+      - export PATH=$PATH:/usr/local/bin
       - clojure -Sdescribe
-
-  pre_build:
-    commands:
-      - echo "=== PRE-BUILD PHASE ==="
-      - git rev-parse --short HEAD || echo "Warning: no git commit detected"
-      - ls -lah
-      - chmod +x bin/* || true
+      
+      # Install Yarn and dependencies
+      - npm install -g yarn
+      - echo "Installing Yarn dependencies..."
+      - yarn install --frozen-lockfile
 
   build:
     commands:
-      - echo "=== BUILDING METABASE ==="
-      - ./bin/build || ./bin/build.sh || ./bin/build-for-test
-      - echo "=== Searching for built jar ==="
-      - find ./target -name "*.jar" | head -n 5
-      - TARGET_JAR=$(find ./target -name 'metabase*.jar' | head -n 1)
-      - if [ -n "$TARGET_JAR" ]; then
-          echo "Found JAR: $TARGET_JAR";
-          mv "$TARGET_JAR" "$MB_ARTIFACT_NAME";
-        else
-          echo "No JAR found. Build failed.";
-          exit 1;
-        fi
+      - echo "Starting Build Phase"
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - export PATH=$PATH:/usr/local/bin
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - chmod +x ./bin/*
 
-  post_build:
-    commands:
-      - echo "=== POST BUILD ==="
-      - ls -lah
+      - echo "Running Metabase build script..."
+      - ./bin/build || ./bin/build.sh || ./bin/build-for-test
+
+      - echo "Searching for built JAR..."
+      - |
+        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
+        if [ -n "$TARGET_JAR" ]; then
+          echo "Found JAR: $TARGET_JAR"
+          mv "$TARGET_JAR" "$MB_ARTIFACT_NAME"
+          echo "Successfully created $MB_ARTIFACT_NAME"
+        else
+          echo "No JAR found after build attempts"
+          exit 1
+        fi
 
 artifacts:
   files:
