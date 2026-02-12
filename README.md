@@ -1,112 +1,217 @@
-# Metabase
+# 🚀 Automated Metabase CI/CD Deployment on AWS Cloud
 
-[Metabase](https://www.metabase.com) is the easy, open-source way for everyone in your company to ask questions and learn from data.
+## 📌 Project Overview
 
-![Metabase Product Screenshot](https://www.metabase.com/images/metabase-product-screenshot-updated.png)
+This project demonstrates a complete DevOps implementation for deploying the **Metabase Analytics Platform** using a fully automated **CI/CD pipeline on AWS**. The repository is forked from the official Metabase repository and extended to include enterprise-grade cloud infrastructure, automation, security, and deployment workflows.
 
-[![Latest Release](https://img.shields.io/github/release/metabase/metabase.svg?label=latest%20release)](https://github.com/metabase/metabase/releases)
-[![codecov](https://codecov.io/gh/metabase/metabase/branch/master/graph/badge.svg)](https://codecov.io/gh/metabase/metabase)
-![Docker Pulls](https://img.shields.io/docker/pulls/metabase/metabase)
+The focus of this project is not application development, but **DevOps engineering, cloud architecture, automation, and CI/CD pipeline implementation**.
 
-## Get started
+---
 
-The easiest way to get started with Metabase is to sign up for a free trial of [Metabase Cloud](https://store.metabase.com/checkout). You get support, backups, upgrades, an SMTP server, SSL certificate, SoC2 Type 2 security auditing, and more (plus your money goes toward improving Metabase). Check out our quick overview of [cloud vs self-hosting](https://www.metabase.com/docs/latest/cloud/cloud-vs-self-hosting). If you need to, you can always switch to [self-hosting](https://www.metabase.com/docs/latest/installation-and-operation/installing-metabase) Metabase at any time (or vice versa).
+## 🎯 Project Objective
 
-## Key Features
+To design and implement a production-grade CI/CD system that:
 
-- [Set up in five minutes](https://www.metabase.com/docs/latest/configuring-metabase/setting-up-metabase) (we're not kidding).
-- Let anyone on your team [ask questions](https://www.metabase.com/docs/latest/questions/introduction) without knowing SQL.
-- Use the [SQL editor](https://www.metabase.com/docs/latest/questions/native-editor/writing-sql) for more complex queries.
-- Build handsome, interactive [dashboards](https://www.metabase.com/docs/latest/dashboards/introduction) with filters, auto-refresh, fullscreen, and custom click behavior.
-- Create [models](https://www.metabase.com/learn/metabase-basics/getting-started/models) that clean up, annotate, and/or combine raw tables.
-- Define canonical [segments and metrics](https://www.metabase.com/docs/latest/data-modeling/metrics) for your team to use.
-- Send data to Slack or email on a schedule with [dashboard subscriptions](https://www.metabase.com/docs/latest/dashboards/subscriptions).
-- Set up [alerts](https://www.metabase.com/docs/latest/questions/alerts) to have Metabase notify you when your data changes.
-- [Embed charts and dashboards](https://www.metabase.com/docs/latest/embedding/introduction) in your app, or even [your entire Metabase](https://www.metabase.com/docs/latest/embedding/interactive-embedding).
-- Build with the [Embedded Analytics SDK for React](https://www.metabase.com/docs/latest/embedding/sdk/introduction) to embed standalone components with custom styling that matches your app's design.
+* Automatically builds Metabase from source
+* Packages the application as a JAR
+* Stores build artifacts securely
+* Deploys the application to EC2
+* Integrates PostgreSQL as metadata storage
+* Secures credentials using Secrets Manager
+* Provides scalable, secure cloud architecture
 
-Take a [tour of Metabase](https://www.metabase.com/learn/metabase-basics/overview/tour-of-metabase).
+---
 
-## Supported databases
+## 🧱 Architecture Overview
 
-- [Officially supported databases](./docs/databases/connecting.md#connecting-to-supported-databases)
-- [Community drivers](./docs/developers-guide/community-drivers.md)
+### 📊 CI/CD Deployment Flow Diagram
 
-## Installation
+![Metabase CI/CD Architecture](Metabase_Flow_Diagram.jpg)
 
-Metabase can be run just about anywhere. Check out our [Installation Guides](https://www.metabase.com/docs/latest/installation-and-operation/installing-metabase).
+### 🔄 Deployment Flow
+GitHub (Forked Repo) → AWS CodePipeline → AWS CodeBuild → S3 Artifact Bucket → AWS CodeDeploy → EC2 Instance → Metabase Application → Amazon RDS (PostgreSQL)
 
-## Contributing
+NGINX is used as a reverse proxy with SSL termination for secure browser access.
 
-## Quick Setup: Dev environment
+---
 
-In order to spin up a development environment, you need to start the front end and the backend as follows:
+## ⚙️ Services & Technologies Used
 
-### Frontend quick setup
+### AWS Services
 
-The following command will install the JavaScript dependencies:
+* AWS CodePipeline (CI/CD Orchestration)
+* AWS CodeBuild (Build Automation)
+* AWS CodeDeploy (Automated Deployment)
+* Amazon EC2 (Application Hosting)
+* Amazon S3 (Artifact Storage)
+* Amazon RDS (PostgreSQL Database)
+* AWS IAM (Access Control)
+* AWS Secrets Manager (Credential Management)
+* AWS VPC (Network Isolation)
+* Security Groups & Subnets
 
-```bash
-yarn install
+### DevOps & System Tools
+
+* Linux (Ubuntu)
+* Bash & Shell Scripting
+* systemd
+* NGINX
+* SSL (Certbot)
+* Git & GitHub
+
+---
+
+## 🔄 CI/CD Pipeline Flow
+
+1. Developer pushes code to forked GitHub repository
+2. AWS CodePipeline triggers automatically
+3. CodeBuild builds Metabase JAR file
+4. Build artifact is stored in S3
+5. CodeDeploy pulls artifact
+6. Deployment scripts execute on EC2
+7. systemd service runs Metabase
+8. Application connects to PostgreSQL (RDS)
+9. NGINX serves application securely over HTTPS
+
+---
+
+## 🔐 Security Implementation
+
+* IAM roles with least-privilege access
+* Secrets stored in AWS Secrets Manager
+* RDS deployed in private subnet
+* EC2 access controlled via Security Groups
+* VPC network isolation
+* SSL encryption using Certbot
+* No hardcoded credentials
+
+---
+
+## 🌐 Network Design
+
+* Custom VPC
+* Public Subnet: EC2 + NGINX
+* Private Subnet: RDS PostgreSQL
+* NAT Gateway for outbound internet access
+* Security group-based traffic control
+
+---
+
+## 📁 Project Structure
+
+```
+metabase/
+├── .github/                 # GitHub workflows & configurations
+├── bin/                     # Utility binaries
+├── dev/                     # Development utilities
+├── docs/                    # Documentation files
+├── e2e/                     # End-to-end tests
+├── enterprise/              # Enterprise edition components
+├── frontend/                # Frontend source code
+├── hooks/                   # Git hooks & automation
+├── locales/                 # Language translations
+├── modules/                 # Core application modules
+├── resources/               # Static resources
+├── scripts/                 # Helper scripts
+├── src/                     # Backend source code (Clojure)
+├── test/                    # Test cases
+│
+├── buildspec.yml            # AWS CodeBuild configuration
+├── appspec.yml              # AWS CodeDeploy configuration
+├── Dockerfile               # Container build definition
+├── package.json             # Frontend dependencies
+├── deps.edn                 # Backend dependencies
+├── systemd/                 # Custom systemd service file (added for deployment)
+│   └── metabase.service
+│
+└── README.md                # Project documentation
 ```
 
-To build and run without watching changes:
+---
 
-```bash
-yarn build
-```
+## ⚡ Deployment Automation
 
-To build and run with hot-reload:
+* Build automation using CodeBuild
+* Artifact management via S3
+* Server provisioning using EC2
+* Service orchestration using systemd
+* Reverse proxy via NGINX
+* SSL automation via Certbot
+* Database integration with PostgreSQL
 
-```bash
-yarn build-hot
-```
+---
 
-### Backend  quick setup
+## 📊 Monitoring & Reliability
 
-To run the backend, you'll need to build the drivers first, and then start the backend:
+* CloudWatch Logs for build and deploy stages
+* CodeDeploy health checks
+* systemd auto-restart
+* RDS automated backups
+* Pipeline failure detection
 
-```bash
-./bin/build-drivers.sh
-clojure -M:run
-```
+---
 
-For a more detailed setup of a dev environment for Metabase, check out our [Developers Guide](./docs/developers-guide/start.md).
+## 🎓 Learning Outcomes
 
-## Internationalization
+This project demonstrates practical knowledge in:
 
-We want Metabase to be available in as many languages as possible. See which translations are available and help contribute to internationalization using our project over at [Crowdin](https://crowdin.com/project/metabase-i18n). You can also check out our [policies on translations](https://www.metabase.com/docs/latest/administration-guide/localization.html).
+* CI/CD pipeline engineering
+* Cloud infrastructure design
+* DevOps automation
+* Secure credential management
+* Cloud networking
+* Production deployment architecture
+* Linux system administration
+* Enterprise DevOps workflows
 
-## Extending Metabase
+---
 
-Hit our Query API from JavaScript to integrate analytics. Metabase enables your application to:
+## 🧠 DevOps Concepts Applied
 
-- Build moderation interfaces.
-- Export subsets of your users to third party marketing automation software.
-- Provide a custom customer lookup application for the people in your company.
+* Infrastructure as a Platform
+* Continuous Integration
+* Continuous Deployment
+* Secure DevOps
+* Cloud-native architecture
+* Immutable deployments
+* Artifact-driven pipelines
+* Automated provisioning
 
-Check out our guide, [Working with the Metabase API](https://www.metabase.com/learn/metabase-basics/administration/administration-and-operation/metabase-api).
+---
 
-## Security Disclosure
+## 📌 Use Cases
 
-See [SECURITY.md](./SECURITY.md) for details.
+* DevOps portfolio project
+* Cloud engineer demonstration project
+* CI/CD learning reference
+* Enterprise deployment model
+* Production simulation project
 
-## License
+---
 
-This repository contains the source code for both the Open Source edition of Metabase, released under the AGPL, as well as the [commercial editions of Metabase](https://www.metabase.com/pricing/), which are released under the Metabase Commercial Software License.
+## 📜 Attribution
 
-See [LICENSE.txt](./LICENSE.txt) for details.
+This repository is forked from the official **Metabase** open-source project.
 
-Unless otherwise noted, all files © 2025 Metabase, Inc.
+All core application source code belongs to the **Metabase Team**.
 
-## Community
+This fork is used exclusively for:
 
-- [Discourse](https://discourse.metabase.com/)
-- [Twitter](https://x.com/metabase)
-- [LinkedIn](https://www.linkedin.com/company/metabase/)
-- [YouTube](https://www.youtube.com/@metabasedata)
-- [Reddit](https://www.reddit.com/r/Metabase/)
+* DevOps automation
+* CI/CD implementation
+* Cloud deployment
+* Infrastructure design
+* Educational and learning purposes
 
-## Metabase Experts
+---
 
-If you’d like more technical resources to set up your data stack with Metabase, connect with a [Metabase Expert](https://www.metabase.com/partners/?utm_source=readme&utm_medium=metabase-expetrs&utm_campaign=readme).
+## 📄 License
+
+Original application license belongs to Metabase.
+This repository follows the same open-source license terms.
+
+---
+
+## 👨‍💻 Author
+
+Project implemented as a DevOps learning and portfolio project demonstrating real-world cloud CI/CD practices.
