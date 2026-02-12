@@ -6,7 +6,7 @@ This project demonstrates a complete DevOps implementation for deploying the **M
 
 The focus of this project is not application development, but **DevOps engineering, cloud architecture, automation, and CI/CD pipeline implementation**.
 
----
+
 
 ## 🎯 Project Objective
 
@@ -20,7 +20,7 @@ To design and implement a production-grade CI/CD system that:
 * Secures credentials using Secrets Manager
 * Provides scalable, secure cloud architecture
 
----
+
 
 ## 🧱 Architecture Overview
 
@@ -33,7 +33,7 @@ GitHub (Forked Repo) → AWS CodePipeline → AWS CodeBuild → S3 Artifact Buck
 
 NGINX is used as a reverse proxy with SSL termination for secure browser access.
 
----
+
 
 ## ⚙️ Services & Technologies Used
 
@@ -59,7 +59,7 @@ NGINX is used as a reverse proxy with SSL termination for secure browser access.
 * SSL (Certbot)
 * Git & GitHub
 
----
+
 
 ## 🔄 CI/CD Pipeline Flow
 
@@ -73,7 +73,7 @@ NGINX is used as a reverse proxy with SSL termination for secure browser access.
 8. Application connects to PostgreSQL (RDS)
 9. NGINX serves application securely over HTTPS
 
----
+
 
 ## 🔐 Security Implementation
 
@@ -85,7 +85,7 @@ NGINX is used as a reverse proxy with SSL termination for secure browser access.
 * SSL encryption using Certbot
 * No hardcoded credentials
 
----
+
 
 ## 🌐 Network Design
 
@@ -95,7 +95,7 @@ NGINX is used as a reverse proxy with SSL termination for secure browser access.
 * NAT Gateway for outbound internet access
 * Security group-based traffic control
 
----
+
 
 ## 📁 Project Structure
 
@@ -127,7 +127,7 @@ metabase/
 └── README.md                # Project documentation
 ```
 
----
+
 
 ## ⚡ Deployment Automation
 
@@ -139,7 +139,7 @@ metabase/
 * SSL automation via Certbot
 * Database integration with PostgreSQL
 
----
+
 
 ## 📊 Monitoring & Reliability
 
@@ -149,7 +149,7 @@ metabase/
 * RDS automated backups
 * Pipeline failure detection
 
----
+
 
 ## 🎓 Learning Outcomes
 
@@ -164,7 +164,7 @@ This project demonstrates practical knowledge in:
 * Linux system administration
 * Enterprise DevOps workflows
 
----
+
 
 ## 🧠 DevOps Concepts Applied
 
@@ -177,7 +177,7 @@ This project demonstrates practical knowledge in:
 * Artifact-driven pipelines
 * Automated provisioning
 
----
+
 
 ## 📌 Use Cases
 
@@ -187,7 +187,7 @@ This project demonstrates practical knowledge in:
 * Enterprise deployment model
 * Production simulation project
 
----
+
 
 ## 📜 Attribution
 
@@ -203,14 +203,14 @@ This fork is used exclusively for:
 * Infrastructure design
 * Educational and learning purposes
 
----
+
 
 ## 📄 License
 
 Original application license belongs to Metabase.
 This repository follows the same open-source license terms.
 
----
+
 
 ## 👨‍💻 Author
 
